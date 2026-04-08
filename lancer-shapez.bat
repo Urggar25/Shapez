@@ -1,0 +1,6 @@
+@echo off
+title shapez.io - Lancement...
+cd /d "%~dp0gulp"
+echo Demarrage de shapez.io...
+yarn gulp main.serveDev
+pause
