@@ -1,4 +1,5 @@
 const path = require("path");
+const { spawnSync } = require("child_process");
 const audiosprite = require("gulp-audiosprite");
 
 function gulptasksSounds($, gulp, buildFolder) {
@@ -22,11 +23,28 @@ function gulptasksSounds($, gulp, buildFolder) {
         return { _isVinyl, base, cwd, contents: encodedContents, history, stat, path };
     }
 
+    function hasFfmpegBinary() {
+        const command = process.platform === "win32" ? "where" : "which";
+        return spawnSync(command, ["ffmpeg"], { stdio: "ignore" }).status === 0;
+    }
+
+    function createMusicSource() {
+        return gulp.src(
+            [path.join(soundsDir, "music", "**", "*.wav"), path.join(soundsDir, "music", "**", "*.mp3")],
+            { allowEmpty: true }
+        );
+    }
+
     // Encodes the game music
     gulp.task("sounds.music", () => {
-        return gulp
-            .src([path.join(soundsDir, "music", "**", "*.wav"), path.join(soundsDir, "music", "**", "*.mp3")])
-            .pipe($.plumber())
+        if (!hasFfmpegBinary()) {
+            console.warn("Skipping music re-encode: ffmpeg is not available. Copying existing mp3 files only.");
+            return gulp
+                .src([path.join(soundsDir, "music", "**", "*.mp3")], { allowEmpty: true })
+                .pipe(gulp.dest(path.join(builtSoundsDir, "music")));
+        }
+
+        return createMusicSource()
             .pipe(
                 $.cache(
                     $.fluentFfmpeg("mp3", function (cmd) {
@@ -49,9 +67,14 @@ function gulptasksSounds($, gulp, buildFolder) {
 
     // Encodes the game music in high quality for the standalone
     gulp.task("sounds.musicHQ", () => {
-        return gulp
-            .src([path.join(soundsDir, "music", "**", "*.wav"), path.join(soundsDir, "music", "**", "*.mp3")])
-            .pipe($.plumber())
+        if (!hasFfmpegBinary()) {
+            console.warn("Skipping HQ music re-encode: ffmpeg is not available. Copying existing mp3 files only.");
+            return gulp
+                .src([path.join(soundsDir, "music", "**", "*.mp3")], { allowEmpty: true })
+                .pipe(gulp.dest(path.join(builtSoundsDir, "music")));
+        }
+
+        return createMusicSource()
             .pipe(
                 $.cache(
                     $.fluentFfmpeg("mp3", function (cmd) {
