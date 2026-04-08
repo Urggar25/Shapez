@@ -1,27 +1,34 @@
+@use "../mixins" as *;
+@use "../ui_resource" as *;
+@use "../variables" as *;
+
+@use "sass:color";
+
 #state_KeybindingsState {
     .content {
         .topEntries {
             display: grid;
             grid-template-columns: 1fr auto;
-            @include S(grid-gap, 5px);
-            @include S(margin-bottom, 10px);
+            grid-gap: 0.5rem;
+            margin-bottom: 1rem;
         }
 
         .hint {
             display: block;
             background: #eee;
-            @include S(padding, 4px);
+            padding: 0.6rem 1rem;
             @include PlainText;
+            border-radius: $globalBorderRadius;
         }
 
         .category {
             .entry {
                 display: grid;
-                @include S(margin-top, 2px);
-                @include S(padding-top, 2px);
-                @include S(grid-gap, 4px);
-                grid-template-columns: 1fr #{D(100px)} auto auto;
-                border-bottom: #{D(1px)} dotted #eee;
+                margin-top: 0.2rem;
+                padding-top: 0.2rem;
+                grid-gap: 0.4rem;
+                grid-template-columns: 1fr 10rem auto auto;
+                border-bottom: 0.1rem dotted #eee;
                 color: #888c8f;
                 .mapping {
                     color: $colorBlueBright;
@@ -29,18 +36,15 @@
                 }
 
                 button {
-                    @include S(height, 15px);
-                    @include S(width, 15px);
-                    @include IncreasedClickArea(0px);
+                    height: 1.5rem;
+                    width: 1.5rem;
                     background: transparent center center / 40% no-repeat;
                     opacity: 0.9;
                     &.editKeybinding {
-                        /* @load-async */
                         background-image: uiResource("icons/edit_key.png");
                     }
 
                     &.resetKeybinding {
-                        /* @load-async */
                         background-image: uiResource("icons/reset_key.png");
                     }
 
@@ -57,7 +61,7 @@
     @include DarkThemeOverride {
         .content {
             .hint {
-                background: darken($darkModeControlsBackground, 4);
+                background: color.adjust($darkModeControlsBackground, $lightness: -4%, $space: hsl);
             }
 
             .category .entry {

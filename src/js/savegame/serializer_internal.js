@@ -1,22 +1,21 @@
 import { globalConfig } from "../core/config";
-import { createLogger } from "../core/logging";
+import { Logger } from "../core/logging";
 import { Vector } from "../core/vector";
 import { getBuildingDataFromCode } from "../game/building_codes";
 import { Entity } from "../game/entity";
 import { GameRoot } from "../game/root";
 
-const logger = createLogger("serializer_internal");
+const logger = new Logger("serializer_internal");
 
 // Internal serializer methods
 export class SerializerInternal {
     /**
      * Serializes an array of entities
-     * @param {Array<Entity>} array
+     * @param {Map<number, Entity>} map
      */
-    serializeEntityArray(array) {
+    serializeEntityMap(map) {
         const serialized = [];
-        for (let i = 0; i < array.length; ++i) {
-            const entity = array[i];
+        for (const entity of map.values()) {
             if (!entity.queuedForDestroy && !entity.destroyed) {
                 serialized.push(entity.serialize());
             }

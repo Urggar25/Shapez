@@ -1,5 +1,48 @@
 export const CHANGELOG = [
     {
+        version: "1.5.6",
+        date: "09.12.2022",
+        entries: [
+            "⚠️ We are currently prototyping Shapez 2! <a href='https://tobspr.io/shapez-2?utm_medium=s1_steam' target='_blank'>Click here</a> to find out more. ⚠️ ",
+            "Minor fixes & improvements",
+            "Updated translations",
+        ],
+    },
+    {
+        version: "1.5.5",
+        date: "20.06.2022",
+        entries: [
+            "You can now play the full version in your browser! <a href='https://store.steampowered.com/news/app/1318690/view/5974602444932155405' target='_blank'>Click here</a> to read all details.",
+            "Reworked the tutorial to be simpler and more interactive",
+            "General polishing",
+            "Fix being unable to delete savegame when the savegame file was deleted externally",
+            "New sfx when unlocking upgrades",
+            "Updated translations",
+        ],
+    },
+    {
+        version: "1.5.3",
+        date: "05.06.2022",
+        entries: [
+            "Fixed buildings not being lockable in the Puzzle DLC Editor",
+            "Fixed issues launching the game with proton",
+            "Updated translations",
+        ],
+    },
+    {
+        version: "1.5.2",
+        date: "02.06.2022",
+        entries: [
+            "Attempted to fix the 'vram glitch', where the map background would not redraw anymore, especially in fullscreen. If the issue still persists, please let me know in the discord server!",
+            "The game has been renamed from 'shapez.io' to 'shapez', since it is not really an .io game",
+            "Various performance improvements",
+            "Upgrades should now show the full precision",
+            "UI Polishing & Cleanup",
+            "Updated translations",
+            "PS: We are already working on shapez 2, more information will follow in the <a href='https://discord.com/invite/HN7EVzV' target='_blank'>discord</a> soon!",
+        ],
+    },
+    {
         version: "1.5.1",
         date: "25.02.2022",
         entries: [
@@ -62,28 +105,8 @@ export const CHANGELOG = [
         ],
     },
     {
-        version: "1.3.1",
-        date: "16.04.2021",
-        entries: G_CHINA_VERSION
-            ? [
-                  "第13关的交付目标更改为：中国古代指南针。（感谢玩家：凯风入心 创作并提供",
-                  "第17关的交付目标更改为：永乐通宝。（感谢玩家：金天赐 创作并提供",
-                  "第22关的交付目标更改为：凤凰。（感谢玩家：我没得眼镜 创作并提供",
-                  "第23关的交付目标更改为：古代车轮。（感谢玩家：我没得眼镜 创作并提供",
-                  "第24关的交付目标更改为：大熊猫。（感谢玩家：窝囸倪现任 创作并提供",
-
-                  "修复了一些特定情况下偶尔会发生的存档损坏问题",
-                  "修复了成就更新后有时候游戏崩溃的问题",
-              ]
-            : [
-                  "Fixed savegames getting corrupt in rare conditions",
-                  "Fixed game crashing sometimes since the achievements update",
-              ],
-    },
-    {
         version: "1.3.0",
         date: "12.03.2020",
-        skin: "achievements",
         entries: [
             "There are now <strong>45 Steam Achievements!</strong>",
             "Fixed constant signals being editable from the regular layer",

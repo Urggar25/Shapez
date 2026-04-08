@@ -1,11 +1,13 @@
-import { ExplainedResult } from "../core/explained_result";
-import { createLogger } from "../core/logging";
-import { ReadWriteProxy } from "../core/read_write_proxy";
-import { globalConfig } from "../core/config";
-import { Savegame } from "./savegame";
-const logger = createLogger("savegame_manager");
+/* typehints:start */
+import { Application } from "@/application";
+/* typehints:end */
 
-const Rusha = require("rusha");
+import { globalConfig } from "../core/config";
+import { ExplainedResult } from "../core/explained_result";
+import { Logger } from "../core/logging";
+import { ReadWriteProxy } from "../core/read_write_proxy";
+import { Savegame } from "./savegame";
+const logger = new Logger("savegame_manager");
 
 /**
  * @typedef {import("./savegame_typedefs").SavegamesData} SavegamesData
@@ -19,8 +21,11 @@ export const enumLocalSavegameStatus = {
 };
 
 export class SavegameManager extends ReadWriteProxy {
-    constructor(app) {
-        super(app, "savegames.bin");
+    constructor(app, storage) {
+        super(storage, "savegames.bin");
+
+        /** @type {Application} */
+        this.app = app;
 
         this.currentData = this.getDefaultData();
     }
@@ -90,14 +95,6 @@ export class SavegameManager extends ReadWriteProxy {
     }
 
     /**
-     * Returns if this manager has any savegame of a 1.1.19 version, which
-     * enables all levels
-     */
-    getHasAnyLegacySavegames() {
-        return this.currentData.savegames.some(savegame => savegame.version === 1005 || savegame.level > 14);
-    }
-
-    /**
      * Deletes a savegame
      * @param {SavegameMetadata} game
      */
@@ -107,17 +104,22 @@ export class SavegameManager extends ReadWriteProxy {
             metaDataRef: game,
         });
 
-        return handle.deleteAsync().then(() => {
-            for (let i = 0; i < this.currentData.savegames.length; ++i) {
-                const potentialGame = this.currentData.savegames[i];
-                if (potentialGame.internalId === handle.internalId) {
-                    this.currentData.savegames.splice(i, 1);
-                    break;
+        return handle
+            .deleteAsync()
+            .catch(err => {
+                console.warn("Failed to unlink physical savegame file, still removing:", err);
+            })
+            .then(() => {
+                for (let i = 0; i < this.currentData.savegames.length; ++i) {
+                    const potentialGame = this.currentData.savegames[i];
+                    if (potentialGame.internalId === handle.internalId) {
+                        this.currentData.savegames.splice(i, 1);
+                        break;
+                    }
                 }
-            }
 
-            return this.writeAsync();
-        });
+                return this.writeAsync();
+            });
     }
 
     /**
@@ -167,9 +169,6 @@ export class SavegameManager extends ReadWriteProxy {
     importSavegame(data) {
         const savegame = this.createNewSavegame();
 
-        // Track legacy savegames
-        const isOldSavegame = data.version < 1006;
-
         const migrationResult = savegame.migrate(data);
         if (migrationResult.isBad()) {
             return Promise.reject("Failed to migrate: " + migrationResult.reason);
@@ -181,19 +180,14 @@ export class SavegameManager extends ReadWriteProxy {
             return Promise.reject("Verification failed: " + verification.result);
         }
 
-        return savegame
-            .writeSavegameAndMetadata()
-            .then(() => this.updateAfterSavegamesChanged())
-            .then(() => this.app.restrictionMgr.onHasLegacySavegamesChanged(isOldSavegame));
+        return savegame.writeSavegameAndMetadata().then(() => this.updateAfterSavegamesChanged());
     }
 
     /**
      * Hook after the savegames got changed
      */
     updateAfterSavegamesChanged() {
-        return this.sortSavegames()
-            .then(() => this.writeAsync())
-            .then(() => this.app.restrictionMgr.onHasLegacySavegamesChanged(this.getHasAnyLegacySavegames()));
+        return this.sortSavegames().then(() => this.writeAsync());
     }
 
     /**
@@ -228,9 +222,7 @@ export class SavegameManager extends ReadWriteProxy {
      * Helper method to generate a new internal savegame id
      */
     generateInternalId() {
-        return Rusha.createHash()
-            .update(Date.now() + "/" + Math.random())
-            .digest("hex");
+        return self.crypto.randomUUID();
     }
 
     // End

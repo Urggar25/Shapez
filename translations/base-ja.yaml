@@ -1,19 +1,3 @@
-steamPage:
-    shortText: shapez.ioは無限のマップ内で様々な"形"を資源とし、段々と複雑になっていく形の作成や合成の自動化を目指して工場を構築するゲームです。
-    discordLinkShort: 公式Discord
-    intro: >-
-        工場の自動化ゲームはお好きですか？　それならここに来て正解です！
-
-        shapez.ioは、様々な幾何学形状の自動生産工場を建設する、リラックスして遊べるゲームです。レベルが上がるにつれ生産すべき形はどんどん複雑になり、無限に広がるマップに工場を拡張していくことになります。
-
-        しかし、それだけでは不十分です。指数関数的に増大していく形状の要求量に対応する必要があり――「スケーリング」が、唯一の対抗策と成り得ます。また、最初は形状を加工するだけですが、後々着色も必要になってきます。色を抽出して混ぜ合わせましょう！
-
-        Steamでゲームを購入するとフルバージョンで遊べますが、まずshapez.ioでデモをプレイし、その後で決めることもできます！
-    what_others_say: shapez.ioプレイヤーの反応：
-    nothernlion_comment: これはすごいゲーム。プレイ体験が最高な上に時間の溶け方が尋常でない。
-    notch_comment: いややばいって。マジで寝なきゃなんだけど、今ならshapez.ioで計算機組めそうな気がする。
-    steam_review_comment: このゲームは私の生活を奪い去っていったが、返して欲しいとは思わない。
-        いくらでも気の向くままに生産ラインを効率化させてくれる、そんなとても穏やかな工場ゲームだ。
 global:
     loading: ロード中
     error: エラー
@@ -46,34 +30,20 @@ global:
         shift: SHIFT
         space: SPACE
     loggingIn: Logging in
-demoBanners:
-    title: デモ版
-    intro: スタンドアローン版を手に入れ、すべての機能をアンロックしましょう！
+    loadingResources: 追加リソースのダウンロード（<percentage>％）
 mainMenu:
     play: プレイ
     continue: 続きから
     newGame: 新規ゲーム
-    changelog: 更新履歴
-    subreddit: Reddit
     importSavegame: インポート
-    openSourceHint: このゲームはオープンソースです
-    discordLink: 公式Discordサーバー
     helpTranslate: 翻訳にご協力ください！
-    madeBy: <author-link>によって作られました
-    browserWarning: このゲームはお使いのブラウザでは速度が落ちることがあります。スタンドアローン版を入手するか、Chromeでプレイすることで解決できます。
     savegameLevel: レベル <x>
     savegameLevelUnknown: 不明なレベル
     savegameUnnamed: 無名のデータ
-    puzzleMode: Puzzle Mode
-    back: Back
-    puzzleDlcText: Do you enjoy compacting and optimizing factories? Get the Puzzle
-        DLC now on Steam for even more fun!
-    puzzleDlcWishlist: Wishlist now!
-    puzzleDlcViewNow: View Dlc
     mods:
-        title: Active Mods
         warningPuzzleDLC: Playing the Puzzle DLC is not possible with mods. Please
             disable all mods to play the DLC.
+    noActiveSavegames: No active savegames found - Click play to start a new game!
 dialogs:
     buttons:
         ok: OK
@@ -82,7 +52,6 @@ dialogs:
         later: 後で
         restart: 再起動
         reset: リセット
-        getStandalone: スタンドアローン版を入手
         deleteGame: 何が起きるか理解しています
         viewUpdate: アップデートを見る
         showUpgrades: アップグレード表示
@@ -118,12 +87,6 @@ dialogs:
     keybindingsResetOk:
         title: キー設定のリセット
         desc: キー設定を初期値に設定しました！
-    featureRestriction:
-        title: デモ版
-        desc: アクセスした要素 (<feature>) はデモ版では利用できません。スタンドアローン版の入手をご検討ください！
-    oneSavegameLimit:
-        title: セーブデータ制限
-        desc: デモ版ではひとつのセーブデータのみ保持できます。既存のデータを削除するか、スタンドアローン版の入手をご検討ください！
     updateSummary:
         title: 新アップデート！
         desc: "前回からの変更点:"
@@ -157,8 +120,6 @@ dialogs:
         title: 信号を設定
         descItems: "プリセットを選択:"
         descShortKey: もしくは形を表す<strong>短いキー</strong>を入力してください。 (<link>ここ</link>から生成できます)
-    markerDemoLimit:
-        desc: デモ版ではマーカー設置は2つまでに制限されています。スタンドアローン版は無制限です！
     exportScreenshotWarning:
         title: スクリーンショット出力
         desc: スクリーンショット出力を実行します。この処理は工場の全体像があまりに大きいと、 ゲームが遅くなったりクラッシュしてしまう可能性があります！
@@ -242,6 +203,11 @@ dialogs:
             you sure you want to continue?
         missingMods: Missing Mods
         newMods: Newly installed Mods
+    resourceLoadFailed:
+        title: Resources failed to load
+        descSteamDemo: "One ore more resources could not be loaded. Try restarting the
+            game - If that does not help, try reinstalling and verifying the
+            game files via Steam. <br><br> Error Message:"
 ingame:
     keybindingsOverlay:
         moveMap: マップ移動
@@ -350,9 +316,11 @@ ingame:
                 切断機はそれの向きに関わらず、<strong>縦の線</strong>で切断します。"
             2_2_place_trash: 切断機は<strong>詰まる</strong>場合があります!<br><br>
                 <strong>ゴミ箱</strong>を利用して、不必要な部品を廃棄できます。
-            2_3_more_cutters: "いいですね！　<strong>更に2つ以上の切断機</strong>を設置して処理をスピードアップさせましょう！<br>\
+            2_3_more_cutters:
+                "いいですね！　<strong>更に2つ以上の切断機</strong>を設置して処理をスピードアップさせましょう！<br>\
                 <br> 追記: <strong>0から9 のホットキー</strong>を使用すると素早く部品にアクセスできます。"
-            3_1_rectangles: "それでは四角形を抽出しましょう！　<strong>4つの抽出機を作成</strong>してそれをハブに接続します。<br><\
+            3_1_rectangles:
+                "それでは四角形を抽出しましょう！　<strong>4つの抽出機を作成</strong>してそれをハブに接続します。<br><\
                 br> 追記: <strong>SHIFT</strong>を押しながらベルトを引くと ベルトプランナーが有効になります！"
             21_1_place_quad_painter: <strong>四色着色機</strong>を設置して、
                 <strong>円</strong>、<strong>白</strong>そして
@@ -363,42 +331,11 @@ ingame:
             21_4_press_button: "スイッチを押して<strong>真らしい信号を
                 発する</strong>ようにして、着色機を有効化します。<br><br> 追記: 全ての
                 入力を接続する必要はありません！　2つだけ接続してみてください。"
+            1_2_hold_and_drag: ホールド＆ドラッグ
     connectedMiners:
         one_miner: 1個の抽出機
         n_miners: <amount>個の抽出機
         limited_items: <max_throughput>に制限
-    watermark:
-        title: デモバージョン
-        desc: Steamバージョンの特典を確認するには、ここをクリックしてください！
-        get_on_steam: steamで購入
-    standaloneAdvantages:
-        title: フルバージョンを購入
-        no_thanks: いいえ、結構です
-        points:
-            levels:
-                title: 新しい12個のレベル
-                desc: 全部で26個のレベルになります！
-            buildings:
-                title: 新しい18個の設置物
-                desc: あなたの工場を完全自動化しましょう！
-            upgrades:
-                title: 無限のアップグレード段階
-                desc: このデモバージョンでは5段階のみです！
-            markers:
-                title: 無限個のマップマーカー
-                desc: これでもうあなたの工場を見失いません！
-            wires:
-                title: ワイヤ
-                desc: 新次元の体験を得られます！
-            darkmode:
-                title: ダークモード
-                desc: 目に優しい！
-            support:
-                title: 製作者をサポート
-                desc: 余暇に制作しています！
-            achievements:
-                title: アチーブメント
-                desc: 取り尽くせ！
     puzzleEditorSettings:
         zoneTitle: Zone
         zoneWidth: Width
@@ -500,7 +437,7 @@ buildings:
         quad:
             name: 切断機 (四分割)
             description: 形を四分割します。<strong>ひとつの出力しか使わない場合、他の出力を破棄しないと詰まって停止してしまうことに注意してください！</strong>
-    rotater:
+    rotator:
         default:
             name: 回転機
             description: 形を時計回りに90度回転します。
@@ -604,7 +541,7 @@ buildings:
         default:
             name: 仮想切断機
             description: 形状の信号を2つに切断できます。
-        rotater:
+        rotator:
             name: 仮想回転機
             description: 形状の信号を時計回りに回転させます。
         unstacker:
@@ -635,14 +572,16 @@ buildings:
 storyRewards:
     reward_cutter_and_trash:
         title: 形の切断
-        desc: <strong>切断機</strong>が利用可能になりました。これは入力された形を、<strong>向きを考慮せず上下の直線で</strong>半分に切断します！　<br><br>利用しない側の出力に注意しましょう、破棄しなければ<strong>詰まって停止してしまいます。</strong>
+        desc:
+            <strong>切断機</strong>が利用可能になりました。これは入力された形を、<strong>向きを考慮せず上下の直線で</strong>半分に切断します！　<br><br>利用しない側の出力に注意しましょう、破棄しなければ<strong>詰まって停止してしまいます。</strong>
             - このために<strong>ゴミ箱</strong>も用意しました。入力アイテムをすべて破棄できます！
-    reward_rotater:
+    reward_rotator:
         title: 回転
         desc: <strong>回転機</strong>が利用可能になりました！　形を時計回り方向に90度回転させます。
     reward_painter:
         title: 着色
-        desc: "<strong>着色機</strong>が利用可能になりました。（今まで形状でやってきた方法で）色を抽出し、形状と合成することで着色します！　<\
+        desc:
+            "<strong>着色機</strong>が利用可能になりました。（今まで形状でやってきた方法で）色を抽出し、形状と合成することで着色します！　<\
             br><br>追伸: もし色覚特性をお持ちでしたら、 設定に<strong>色覚特性モード</strong>があります！"
     reward_mixer:
         title: 混色
@@ -656,12 +595,13 @@ storyRewards:
     reward_tunnel:
         title: トンネル
         desc: <strong>トンネル</strong>が利用可能になりました。他のベルトや建造物の地下を通してベルトが配置可能です！
-    reward_rotater_ccw:
+    reward_rotator_ccw:
         title: 反時計回りの回転
         desc: <strong>回転機</strong>のバリエーションが利用可能になりました。反時計回りの回転ができるようになります！　回転機を選択し、<strong>'T'キーを押すことで方向の切り替えができます。</strong>
     reward_miner_chainable:
         title: 連鎖抽出機
-        desc: "<strong>連鎖抽出機</strong>が利用可能になりました！ 他の抽出機に<strong>出力を渡す</strong>ことができるので、
+        desc:
+            "<strong>連鎖抽出機</strong>が利用可能になりました！ 他の抽出機に<strong>出力を渡す</strong>ことができるので、
             資源の抽出がより効率的になります！<br><br> 補足: ツールバーの 旧い抽出機が置き換えられました！"
     reward_underground_belt_tier_2:
         title: トンネル　レベルII
@@ -686,13 +626,14 @@ storyRewards:
             通常の着色機と同様に機能しますが、ひとつの色の消費で<strong>一度に2つの形</strong>を着色処理できます！
     reward_storage:
         title: ストレージ
-        desc: <strong>ストレージ</strong>が利用可能になりました。 - 容量上限までアイテムを格納できます！<br><br>
+        desc:
+            <strong>ストレージ</strong>が利用可能になりました。 - 容量上限までアイテムを格納できます！<br><br>
             左側の出力を優先するため、<strong>オーバーフローゲート</strong>としても使用できます！
     reward_blueprints:
         title: ブループリント
         desc: 工場の建造物の<strong>コピー＆ペースト</strong>が利用可能になりました！
             範囲選択(CTRLキーを押したままマウスドラッグ)した状態で、'C'キーを押すことでコピーができます。<br><br>ただしペーストは<strong>タダではありません。</strong><strong>ブループリントの形</strong>を生産する必要があります！(たった今納品した形です)
-    reward_rotater_180:
+    reward_rotator_180:
         title: 回転（180°）
         desc: <strong>回転機</strong>のバリエーションが利用可能になりました！　180°の回転ができるようになります！（サプライズ！ :D）
     reward_wires_painter_and_levers:
@@ -705,7 +646,8 @@ storyRewards:
             設定で<strong>ヒントを有効にする</strong>と、 ワイヤのチュートリアルが有効になります。"
     reward_filter:
         title: アイテムフィルタ
-        desc: <strong>アイテムフィルタ</strong>が利用可能になりました！　ワイヤレイヤの信号と一致するかどうかに応じて、アイテムを上側または右側の出力に分離します。<br><br>
+        desc:
+            <strong>アイテムフィルタ</strong>が利用可能になりました！　ワイヤレイヤの信号と一致するかどうかに応じて、アイテムを上側または右側の出力に分離します。<br><br>
             また、真偽値(0/1)信号を入力すれば全てのアイテムの通過・非通過を制御できます。
     reward_display:
         title: ディスプレイ
@@ -714,11 +656,13 @@ storyRewards:
             ベルトリーダーとストレージが最後に通過したアイテムを出力していることに気づきましたか？ それをディスプレイに表示してみてください！"
     reward_constant_signal:
         title: 定数信号
-        desc: <strong>定数信号</strong>がワイヤレイヤで利用可能になりました！　これは例えば<strong>アイテムフィルタ</strong>に接続すると便利です。<br><br>
+        desc:
+            <strong>定数信号</strong>がワイヤレイヤで利用可能になりました！　これは例えば<strong>アイテムフィルタ</strong>に接続すると便利です。<br><br>
             発信できる信号は<strong>形状</strong>、<strong>色</strong>、<strong>真偽値</strong>(1か0)です。
     reward_logic_gates:
         title: 論理ゲート
-        desc: <strong>論理ゲート</strong>が利用可能になりました！　興奮する必要はありませんが、これは非常に優秀なんですよ！<br><br>
+        desc:
+            <strong>論理ゲート</strong>が利用可能になりました！　興奮する必要はありませんが、これは非常に優秀なんですよ！<br><br>
             これでAND, OR, XOR, NOTを計算できます。<br><br>
             ボーナスとして<strong>トランジスタ</strong>も追加しました！
     reward_virtual_processing:
@@ -730,7 +674,8 @@ storyRewards:
             - ワイヤでイカしたものを作る。<br><br> - 今までのように工場を建設する。<br><br> いずれにしても、楽しんでください！
     no_reward:
         title: 次のレベル
-        desc: "このレベルには報酬はありません。次はきっとありますよ！　<br><br> 補足: すでに作った生産ラインは削除しないようにしましょう。 -
+        desc:
+            "このレベルには報酬はありません。次はきっとありますよ！　<br><br> 補足: すでに作った生産ラインは削除しないようにしましょう。 -
             生産された形は<strong>すべて</strong>、後で<strong>アップグレードの解除</strong>に必要になります！"
     no_reward_freeplay:
         title: 次のレベル
@@ -856,7 +801,8 @@ settings:
             description: 配置用のグリッドを無効にして、パフォーマンスを向上させます。 これにより、ゲームの見た目もすっきりします。
         clearCursorOnDeleteWhilePlacing:
             title: 右クリックで配置をキャンセル
-            description: デフォルトで有効です。建物を設置しているときに右クリックすると、選択中の建物がキャンセルされます。
+            description:
+                デフォルトで有効です。建物を設置しているときに右クリックすると、選択中の建物がキャンセルされます。
                 無効にすると、建物の設置中に右クリックで建物を削除できます。
         lowQualityTextures:
             title: 低品質のテクスチャ(視認性低下)
@@ -923,7 +869,7 @@ keybindings:
         underground_belt: トンネル
         miner: 抽出機
         cutter: 切断機
-        rotater: 回転機
+        rotator: 回転機
         stacker: 積層機
         mixer: 混色機
         painter: 着色機
@@ -984,12 +930,6 @@ about:
 changelog:
     title: 更新履歴
 demo:
-    features:
-        restoringGames: セーブデータのリストア
-        importingGames: セーブデータのインポート
-        oneGameLimit: セーブデータの1個制限
-        customizeKeybindings: キー設定のカスタマイズ
-        exportingBase: 工場の全体像の画像出力
     settingNotAvailable: デモ版では利用できません。
 tips:
     - ハブは現在指定されている形状だけではなく、あらゆる種類の入力を受け付けることができます。
@@ -1014,9 +954,9 @@ tips:
     - 切断機は配置された向きを考慮せず、常に垂直に切断します。
     - ストレージは左側の出力を優先します。
     - 増築可能なデザインを目指してみましょう。それだけの価値があります！
-    - <b>ALT</b>を押しながらベルトを設置すると、向きを逆転できます。
-    - ハブから遠くに離れるほど、形状資源はより複雑な形になります。
-    - 機械の速度には上限があるので、最大効率を得るためには入力を分割してください。
+    - Invest time to build repeatable designs - it's worth it!
+    - Holding <b>SHIFT</b> lets you place multiple buildings at a time.
+    - You can hold <b>ALT</b> to invert the direction of placed belts.
     - 効率を最大化するために分配機/合流機を使用できます。
     - 構成が重要です。ベルトを交差させすぎないようにしてください。
     - 事前設計が重要です。さもないとぐちゃぐちゃになりますよ！
@@ -1030,10 +970,10 @@ tips:
     - モジュールがあれば、空間はただの認識に過ぎなくなる――生ある人間に対する気遣いだ。
     - 設計図としての工場を別に作っておくと、工場のモジュール化において重要な役割を果たします。
     - 混色機をよく見ると、色の混ぜ方が解ります。
-    - <b>CTRL</b>を押したままクリックすると、領域を選択できます。
+    - With modules, space is merely a perception; a concern for mortal men.
     - アップグレードリストの各形状の横にあるピンのアイコンは、その形状を画面左に固定表示します。
     - 三原色全てを混ぜ合わせると白になります！
-    - マップは無限の広さがあります。臆せずに拡張してください。
+    - Use <b>CTRL</b> + Click to select an area.
     - Factorioもプレイしてみてください！　私のお気に入りのゲームです。
     - 切断機(四分割)は右上から時計回りに切断します。
     - メインメニューからセーブデータを保存できます！
@@ -1044,6 +984,10 @@ tips:
     - F4を押すことで、FPSとTickレートを表示できます。
     - F4を2回押すと、マウスとカメラの座標を表示できます。
     - 左のピン留めされた図形をクリックすると、ピン留めを解除できます。
+    - To clear belts, cut the area and then paste it at the same location.
+    - Press F4 to show your FPS and Tick Rate.
+    - Press F4 twice to show the tile of your mouse and camera.
+    - You can click a pinned shape on the left side to unpin it.
 puzzleMenu:
     play: Play
     edit: Edit
@@ -1135,14 +1079,7 @@ mods:
     version: Version
     modWebsite: Website
     openFolder: Open Mods Folder
-    folderOnlyStandalone: Opening the mod folder is only possible when running the standalone.
     browseMods: Browse Mods
     modsInfo: To install and manage mods, copy them to the mods folder within the
         game directory. You can also use the 'Open Mods Folder' button on the
         top right.
-    noModSupport: You need the standalone version on Steam to install mods.
-    togglingComingSoon:
-        title: Coming Soon
-        description: Enabling or disabling mods is currently only possible by copying
-            the mod file from or to the mods/ folder. However, being able to
-            toggle them here is planned for a future update!

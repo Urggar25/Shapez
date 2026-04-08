@@ -1,14 +1,19 @@
 {
     "map": {
-        "background": "#fff",
-        "grid": "#fafafa",
-        "gridLineWidth": 1,
+        "background": "#eceef2",
+
+        "gridRegular": "#e3e7ea",
+        "gridPlacing": "#dadff0",
+
+        "gridLineWidth": 0.5,
 
         "selectionOverlay": "rgba(74, 163, 223, 0.7)",
         "selectionOutline": "rgba(74, 163, 223, 0.5)",
         "selectionBackground": "rgba(74, 163, 223, 0.2)",
 
         "chunkBorders": "rgba(0, 30, 50, 0.03)",
+
+        "tutorialDragText": "rgb(30, 40, 60)",
 
         "directionLock": {
             "regular": {
@@ -28,10 +33,10 @@
         "colorBlindPickerTile": "rgba(50, 50, 50, 0.4)",
 
         "resources": {
-            "shape": "#eaebec",
-            "red": "#ffbfc1",
-            "green": "#cbffc4",
-            "blue": "#bfdaff"
+            "shape": "#e0e2e8",
+            "red": "#f3bcb6",
+            "green": "#cfefa0",
+            "blue": "#b2e0fa"
         },
 
         "chunkOverview": {

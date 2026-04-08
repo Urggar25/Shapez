@@ -1,218 +1,121 @@
-require("colors");
-const packager = require("electron-packager");
-const pj = require("../electron/package.json");
-const path = require("path");
-const { getVersion } = require("./buildutils");
-const fs = require("fs");
-const fse = require("fs-extra");
-const buildutils = require("./buildutils");
-const execSync = require("child_process").execSync;
+import { packager } from "@electron/packager";
+import fs from "fs/promises";
+import gulp from "gulp";
+import path from "path/posix";
+import electronPackageJson from "../electron/package.json" with { type: "json" };
+import { BUILD_VARIANTS } from "./build_variants.js";
+import { getVersion } from "./buildutils.js";
+import { buildProject } from "./typescript.js";
 
-function gulptasksStandalone($, gulp) {
-    const targets = [
-        {
-            tempDestDir: path.join(__dirname, "..", "tmp_standalone_files"),
-            suffix: "",
-            taskPrefix: "",
-            electronBaseDir: path.join(__dirname, "..", "electron"),
-            steam: true,
-        },
-        {
-            tempDestDir: path.join(__dirname, "..", "tmp_standalone_files_china"),
-            suffix: "china",
-            taskPrefix: "china.",
-            electronBaseDir: path.join(__dirname, "..", "electron"),
-            steam: true,
-        },
-        {
-            tempDestDir: path.join(__dirname, "..", "tmp_standalone_files_wegame"),
-            suffix: "wegame",
-            taskPrefix: "wegame.",
-            electronBaseDir: path.join(__dirname, "..", "electron_wegame"),
-            steam: false,
-        },
-    ];
+import gulpClean from "gulp-clean";
 
-    for (const { tempDestDir, suffix, taskPrefix, electronBaseDir, steam } of targets) {
-        const tempDestBuildDir = path.join(tempDestDir, "built");
+const platforms = /** @type {const} */ (["win32", "linux", "darwin"]);
+const architectures = /** @type {const} */ (["x64", "arm64"]);
 
-        gulp.task(taskPrefix + "standalone.prepare.cleanup", () => {
-            return gulp.src(tempDestDir, { read: false, allowEmpty: true }).pipe($.clean({ force: true }));
-        });
+export default Object.fromEntries(
+    Object.entries(BUILD_VARIANTS)
+        .filter(([variant, variantData]) => variantData.standalone)
+        .map(([variant, variantData]) => {
+            const tempDestDir = path.join("..", "build_output", variant);
+            const electronBaseDir = path.join("..", "electron");
+            const tempDestBuildDir = path.join(tempDestDir, "built");
 
-        gulp.task(taskPrefix + "standalone.prepare.copyPrefab", () => {
-            const requiredFiles = [
-                path.join(electronBaseDir, "node_modules", "**", "*.*"),
-                path.join(electronBaseDir, "node_modules", "**", ".*"),
-                path.join(electronBaseDir, "wegame_sdk", "**", "*.*"),
-                path.join(electronBaseDir, "wegame_sdk", "**", ".*"),
-                path.join(electronBaseDir, "favicon*"),
-
-                // fails on platforms which support symlinks
-                // https://github.com/gulpjs/gulp/issues/1427
-                // path.join(electronBaseDir, "node_modules", "**", "*"),
-            ];
-            if (steam) {
-                requiredFiles.push(path.join(electronBaseDir, "steam_appid.txt"));
+            function cleanup() {
+                return gulp
+                    .src(tempDestDir, { read: false, allowEmpty: true })
+                    .pipe(gulpClean({ force: true }));
             }
-            return gulp.src(requiredFiles, { base: electronBaseDir }).pipe(gulp.dest(tempDestBuildDir));
-        });
 
-        gulp.task(taskPrefix + "standalone.prepare.writePackageJson", cb => {
-            const packageJsonString = JSON.stringify(
+            function copyPrefab() {
+                const requiredFiles = ["preload.cjs", "node_modules/**/*", "favicon*"];
+                return gulp
+                    .src(requiredFiles, { cwd: electronBaseDir, cwdbase: true, dot: true })
+                    .pipe(gulp.dest(tempDestBuildDir));
+            }
+
+            async function transpileTypeScript() {
+                const tsconfigPath = path.join(electronBaseDir, "tsconfig.json");
+                const outDir = path.join(tempDestBuildDir, "dist");
+
+                buildProject(tsconfigPath, undefined, outDir);
+                return Promise.resolve();
+            }
+
+            async function writePackageJson() {
+                const pkgJson = structuredClone(electronPackageJson);
+                pkgJson.version = getVersion();
+                delete pkgJson.scripts;
+
+                const packageJsonString = JSON.stringify(pkgJson);
+                await fs.writeFile(path.join(tempDestBuildDir, "package.json"), packageJsonString);
+            }
+
+            function copyGamefiles() {
+                return gulp.src("../build/**/*.*", { base: "../build" }).pipe(gulp.dest(tempDestBuildDir));
+            }
+
+            const prepare = {
+                cleanup,
+                copyPrefab,
+                transpileTypeScript,
+                writePackageJson,
+                copyGamefiles,
+                all: gulp.series(cleanup, copyPrefab, transpileTypeScript, writePackageJson, copyGamefiles),
+            };
+
+            /**
+             *
+             * @param {typeof platforms[number] | (typeof platforms[number])[]} platform
+             * @param {typeof architectures[number] | (typeof architectures[number])[]} arch
+             */
+            async function packageStandalone(platform, arch) {
+                const appPaths = await packager({
+                    dir: tempDestBuildDir,
+                    appCopyright: "tobspr Games",
+                    appVersion: getVersion(),
+                    buildVersion: "1.0.0",
+                    arch,
+                    platform,
+                    asar: true,
+                    executableName: "shapezio",
+                    icon: path.join(electronBaseDir, "favicon"),
+                    name: "shapez",
+                    out: tempDestDir,
+                    overwrite: true,
+                    appBundleId: "tobspr.shapezio." + variant,
+                    appCategoryType: "public.app-category.games",
+                });
+
+                console.log("Packages created:", appPaths);
+                await Promise.all(
+                    appPaths.map(async appPath => {
+                        await fs.writeFile(
+                            path.join(appPath, "LICENSE"),
+                            await fs.readFile(path.join("..", "LICENSE"))
+                        );
+                    })
+                );
+            }
+
+            const pack = {
+                ...Object.fromEntries(
+                    platforms.flatMap(platform =>
+                        architectures.map(arch => [
+                            `${platform}-${arch}`,
+                            () => packageStandalone(platform, arch),
+                        ])
+                    )
+                ),
+                // TODO: Review this hack forced by readonly types
+                all: () => packageStandalone([...platforms], [...architectures]),
+            };
+
+            return [
+                variant,
                 {
-                    scripts: {
-                        start: pj.scripts.start,
-                    },
-                    devDependencies: pj.devDependencies,
-                    dependencies: pj.dependencies,
-                    optionalDependencies: pj.optionalDependencies,
+                    prepare,
+                    package: pack,
                 },
-                null,
-                4
-            );
-
-            fs.writeFileSync(path.join(tempDestBuildDir, "package.json"), packageJsonString);
-
-            cb();
-        });
-
-        gulp.task(taskPrefix + "standalone.prepareVDF", cb => {
-            if (!steam) {
-                cb();
-                return;
-            }
-
-            const hash = buildutils.getRevision();
-
-            const steampipeDir = path.join(__dirname, "steampipe", "scripts");
-            const templateContents = fs
-                .readFileSync(path.join(steampipeDir, "app.vdf.template"), { encoding: "utf-8" })
-                .toString();
-
-            const convertedContents = templateContents.replace("$DESC$", "Commit " + hash);
-            fs.writeFileSync(path.join(steampipeDir, "app.vdf"), convertedContents);
-
-            cb();
-        });
-
-        gulp.task(taskPrefix + "standalone.prepare.minifyCode", () => {
-            return gulp.src(path.join(electronBaseDir, "*.js")).pipe(gulp.dest(tempDestBuildDir));
-        });
-
-        gulp.task(taskPrefix + "standalone.prepare.copyGamefiles", () => {
-            return gulp.src("../build/**/*.*", { base: "../build" }).pipe(gulp.dest(tempDestBuildDir));
-        });
-
-        gulp.task(taskPrefix + "standalone.killRunningInstances", cb => {
-            try {
-                execSync("taskkill /F /IM shapezio.exe");
-            } catch (ex) {
-                console.warn("Failed to kill running instances, maybe none are up.");
-            }
-            cb();
-        });
-
-        gulp.task(
-            taskPrefix + "standalone.prepare",
-            gulp.series(
-                taskPrefix + "standalone.killRunningInstances",
-                taskPrefix + "standalone.prepare.cleanup",
-                taskPrefix + "standalone.prepare.copyPrefab",
-                taskPrefix + "standalone.prepare.writePackageJson",
-                taskPrefix + "standalone.prepare.minifyCode",
-                taskPrefix + "standalone.prepare.copyGamefiles"
-            )
-        );
-
-        /**
-         *
-         * @param {'win32'|'linux'} platform
-         * @param {'x64'|'ia32'} arch
-         * @param {function():void} cb
-         */
-        function packageStandalone(platform, arch, cb) {
-            const tomlFile = fs.readFileSync(path.join(__dirname, ".itch.toml"));
-            const privateArtifactsPath = "node_modules/shapez.io-private-artifacts";
-
-            let asar = steam;
-            if (steam && fs.existsSync(path.join(tempDestBuildDir, privateArtifactsPath))) {
-                // @ts-expect-error
-                asar = { unpackDir: privateArtifactsPath };
-            }
-
-            packager({
-                dir: tempDestBuildDir,
-                appCopyright: "tobspr Games",
-                appVersion: getVersion(),
-                buildVersion: "1.0.0",
-                arch,
-                platform,
-                asar: asar,
-                executableName: "shapezio",
-                icon: path.join(electronBaseDir, "favicon"),
-                name: "shapez.io-standalone" + suffix,
-                out: tempDestDir,
-                overwrite: true,
-                appBundleId: "io.shapez.standalone",
-                appCategoryType: "public.app-category.games",
-            }).then(
-                appPaths => {
-                    console.log("Packages created:", appPaths);
-                    appPaths.forEach(appPath => {
-                        if (!fs.existsSync(appPath)) {
-                            console.error("Bad app path gotten:", appPath);
-                            return;
-                        }
-
-                        if (steam) {
-                            fs.writeFileSync(
-                                path.join(appPath, "LICENSE"),
-                                fs.readFileSync(path.join(__dirname, "..", "LICENSE"))
-                            );
-
-                            fse.copySync(
-                                path.join(tempDestBuildDir, "steam_appid.txt"),
-                                path.join(appPath, "steam_appid.txt")
-                            );
-
-                            fs.writeFileSync(path.join(appPath, ".itch.toml"), tomlFile);
-
-                            if (platform === "linux") {
-                                fs.writeFileSync(
-                                    path.join(appPath, "play.sh"),
-                                    '#!/usr/bin/env bash\n./shapezio --no-sandbox "$@"\n'
-                                );
-                                fs.chmodSync(path.join(appPath, "play.sh"), 0o775);
-                            }
-                        }
-                    });
-
-                    cb();
-                },
-                err => {
-                    console.error("Packaging error:", err);
-                    cb();
-                }
-            );
-        }
-
-        gulp.task(taskPrefix + "standalone.package.prod.win64", cb => packageStandalone("win32", "x64", cb));
-        gulp.task(taskPrefix + "standalone.package.prod.linux64", cb =>
-            packageStandalone("linux", "x64", cb)
-        );
-
-        gulp.task(
-            taskPrefix + "standalone.package.prod",
-            gulp.series(
-                taskPrefix + "standalone.prepare",
-                gulp.parallel(
-                    taskPrefix + "standalone.package.prod.win64",
-                    taskPrefix + "standalone.package.prod.linux64"
-                )
-            )
-        );
-    }
-}
-
-module.exports = { gulptasksStandalone };
+            ];
+        })
+);

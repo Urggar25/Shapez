@@ -1,8 +1,9 @@
 import { ClickDetector } from "../../../core/click_detector";
 import { InputReceiver } from "../../../core/input_receiver";
 import { formatBigNumber, getRomanNumber, makeDiv } from "../../../core/utils";
+import { SOUNDS } from "../../../platform/sound";
 import { T } from "../../../translations";
-import { KeyActionMapper, KEYMAPPINGS } from "../../key_action_mapper";
+import { KEYMAPPINGS, KeyActionMapper } from "../../key_action_mapper";
 import { BaseHUDPart } from "../base_hud_part";
 import { DynamicDomAttach } from "../dynamic_dom_attach";
 
@@ -98,8 +99,8 @@ export class HUDShop extends BaseHUDPart {
 
             // Set description
             handle.elemDescription.innerText = T.shopUpgrades[upgradeId].description
-                .replace("<currentMult>", formatBigNumber(currentTierMultiplier))
-                .replace("<newMult>", formatBigNumber(currentTierMultiplier + tierHandle.improvement));
+                .replace("<currentMult>", currentTierMultiplier.toFixed(2))
+                .replace("<newMult>", (currentTierMultiplier + tierHandle.improvement).toFixed(2));
 
             tierHandle.required.forEach(({ shape, amount }) => {
                 const container = makeDiv(handle.elemRequirements, null, ["requirement"]);
@@ -122,18 +123,16 @@ export class HUDShop extends BaseHUDPart {
                 container.appendChild(pinButton);
 
                 let infoDetector;
-                if (!G_WEGAME_VERSION) {
-                    const viewInfoButton = document.createElement("button");
-                    viewInfoButton.classList.add("showInfo");
-                    container.appendChild(viewInfoButton);
-                    infoDetector = new ClickDetector(viewInfoButton, {
-                        consumeEvents: true,
-                        preventDefault: true,
-                    });
-                    infoDetector.click.add(() =>
-                        this.root.hud.signals.viewShapeDetailsRequested.dispatch(shapeDef)
-                    );
-                }
+                const viewInfoButton = document.createElement("button");
+                viewInfoButton.classList.add("showInfo");
+                container.appendChild(viewInfoButton);
+                infoDetector = new ClickDetector(viewInfoButton, {
+                    consumeEvents: true,
+                    preventDefault: true,
+                });
+                infoDetector.click.add(() =>
+                    this.root.hud.signals.viewShapeDetailsRequested.dispatch(shapeDef)
+                );
 
                 const currentGoalShape = this.root.hubGoals.currentGoal.definition.getHash();
                 if (shape === currentGoalShape) {
@@ -194,8 +193,8 @@ export class HUDShop extends BaseHUDPart {
             attachClass: "visible",
         });
 
-        this.inputReciever = new InputReceiver("shop");
-        this.keyActionMapper = new KeyActionMapper(this.root, this.inputReciever);
+        this.inputReceiver = new InputReceiver("shop");
+        this.keyActionMapper = new KeyActionMapper(this.root, this.inputReceiver);
 
         this.keyActionMapper.getBinding(KEYMAPPINGS.general.back).add(this.close, this);
         this.keyActionMapper.getBinding(KEYMAPPINGS.ingame.menuClose).add(this.close, this);
@@ -225,13 +224,13 @@ export class HUDShop extends BaseHUDPart {
 
     show() {
         this.visible = true;
-        this.root.app.inputMgr.makeSureAttachedAndOnTop(this.inputReciever);
+        this.root.app.inputMgr.makeSureAttachedAndOnTop(this.inputReceiver);
         this.rerenderFull();
     }
 
     close() {
         this.visible = false;
-        this.root.app.inputMgr.makeSureDetached(this.inputReciever);
+        this.root.app.inputMgr.makeSureDetached(this.inputReceiver);
         this.update();
     }
 
@@ -243,8 +242,9 @@ export class HUDShop extends BaseHUDPart {
     }
 
     tryUnlockNextTier(upgradeId) {
-        // Nothing
-        this.root.hubGoals.tryUnlockUpgrade(upgradeId);
+        if (this.root.hubGoals.tryUnlockUpgrade(upgradeId)) {
+            this.root.app.sound.playUiSound(SOUNDS.unlockUpgrade);
+        }
     }
 
     isBlockingOverlay() {

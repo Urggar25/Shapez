@@ -1,17 +1,18 @@
-import { APPLICATION_ERROR_OCCURED } from "../core/error_handler";
-import { GameState } from "../core/game_state";
-import { logSection, createLogger } from "../core/logging";
-import { waitNextFrame } from "../core/utils";
 import { globalConfig } from "../core/config";
-import { GameLoadingOverlay } from "../game/game_loading_overlay";
-import { KeyActionMapper } from "../game/key_action_mapper";
-import { Savegame } from "../savegame/savegame";
+import { GameState } from "../core/game_state";
+import { Logger, logSection } from "../core/logging";
+import { waitNextFrame } from "../core/utils";
 import { GameCore } from "../game/core";
-import { MUSIC } from "../platform/sound";
+import { GameLoadingOverlay } from "../game/game_loading_overlay";
 import { enumGameModeIds } from "../game/game_mode";
+import { HUDModalDialogs } from "../game/hud/parts/modal_dialogs";
+import { KeyActionMapper } from "../game/key_action_mapper";
 import { MOD_SIGNALS } from "../mods/mod_signals";
+import { MUSIC } from "../platform/sound";
+import { Savegame } from "../savegame/savegame";
+import { T } from "../translations";
 
-const logger = createLogger("state/ingame");
+const logger = new Logger("state/ingame");
 
 // Different sub-states
 export const GAME_LOADING_STATES = {
@@ -109,21 +110,6 @@ export class InGameState extends GameState {
         return "";
     }
 
-    getThemeMusic() {
-        if (this.creationPayload.gameModeId && this.creationPayload.gameModeId.includes("puzzle")) {
-            return MUSIC.puzzle;
-        }
-        return MUSIC.theme;
-    }
-
-    onBeforeExit() {
-        // logger.log("Saving before quitting");
-        // return this.doSave().then(() => {
-        //     logger.log(this, "Successfully saved");
-        //     // this.stageDestroyed();
-        // });
-    }
-
     onAppPause() {
         // if (this.stage === stages.s10_gameRunning) {
         //     logger.log("Saving because app got paused");
@@ -208,13 +194,20 @@ export class InGameState extends GameState {
         }
         this.stageLeavingGame();
         this.doSave().then(() => {
-            this.stageDestroyed();
             this.moveToState(stateId, payload);
         });
     }
 
     onBackButton() {
         // do nothing
+    }
+
+    getIsIngame() {
+        return (
+            this.stage === GAME_LOADING_STATES.s10_gameRunning &&
+            this.core &&
+            !this.core.root.hud.shouldPauseGame()
+        );
     }
 
     /**
@@ -225,7 +218,6 @@ export class InGameState extends GameState {
     onInitializationFailure(err) {
         if (this.switchStage(GAME_LOADING_STATES.initFailed)) {
             logger.error("Init failure:", err);
-            this.stageDestroyed();
             this.moveToState("MainMenuState", { loadError: err });
         }
     }
@@ -237,17 +229,52 @@ export class InGameState extends GameState {
      */
     stage3CreateCore() {
         if (this.switchStage(GAME_LOADING_STATES.s3_createCore)) {
-            logger.log("Creating new game core");
-            this.core = new GameCore(this.app);
+            logger.log("Waiting for resources to load");
 
-            this.core.initializeRoot(this, this.savegame, this.gameModeId);
+            this.app.backgroundResourceLoader.resourceStateChangedSignal.add(({ progress }) => {
+                this.loadingOverlay.loadingIndicator.innerText = T.global.loadingResources.replace(
+                    "<percentage>",
+                    (progress * 100.0).toFixed(1)
+                );
+            });
 
-            if (this.savegame.hasGameDump()) {
-                this.stage4bResumeGame();
-            } else {
-                this.app.gameAnalytics.handleGameStarted();
-                this.stage4aInitEmptyGame();
-            }
+            this.app.backgroundResourceLoader.getIngamePromise().then(
+                () => {
+                    if (
+                        this.creationPayload.gameModeId &&
+                        this.creationPayload.gameModeId.includes("puzzle")
+                    ) {
+                        this.app.sound.playThemeMusic(MUSIC.puzzle);
+                    } else {
+                        this.app.sound.playThemeMusic(MUSIC.theme);
+                    }
+
+                    this.loadingOverlay.loadingIndicator.innerText = "";
+                    this.app.backgroundResourceLoader.resourceStateChangedSignal.removeAll();
+
+                    logger.log("Creating new game core");
+                    this.core = new GameCore(this.app);
+
+                    this.core.initializeRoot(this, this.savegame, this.gameModeId);
+
+                    if (this.savegame.hasGameDump()) {
+                        this.stage4bResumeGame();
+                    } else {
+                        this.stage4aInitEmptyGame();
+                    }
+                },
+                err => {
+                    logger.error("Failed to preload resources:", err);
+                    const dialogs = new HUDModalDialogs(null, this.app);
+                    const dialogsElement = document.createElement("div");
+                    dialogsElement.id = "ingame_HUD_ModalDialogs";
+                    dialogsElement.style.zIndex = "999999";
+                    document.body.appendChild(dialogsElement);
+                    dialogs.initializeToElement(dialogsElement);
+
+                    this.app.backgroundResourceLoader.showLoaderError(dialogs, err);
+                }
+            );
         }
     }
 
@@ -270,7 +297,6 @@ export class InGameState extends GameState {
                 this.onInitializationFailure("Savegame is corrupt and can not be restored.");
                 return;
             }
-            this.app.gameAnalytics.handleGameResumed();
             this.stage5FirstUpdate();
         }
     }
@@ -398,7 +424,7 @@ export class InGameState extends GameState {
      * @param {number} dt
      */
     onRender(dt) {
-        if (APPLICATION_ERROR_OCCURED) {
+        if (window.APP_ERROR_OCCURED) {
             // Application somehow crashed, do not do anything
             return;
         }
@@ -444,7 +470,7 @@ export class InGameState extends GameState {
             return Promise.resolve();
         }
 
-        if (APPLICATION_ERROR_OCCURED) {
+        if (window.APP_ERROR_OCCURED) {
             logger.warn("skipping save because application crashed");
             return Promise.resolve();
         }

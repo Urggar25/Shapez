@@ -1,4 +1,4 @@
-import { createLogger } from "../core/logging";
+import { Logger } from "../core/logging";
 import { Signal } from "../core/signal";
 import { fastArrayDelete, fastArrayDeleteValueIfContained } from "./utils";
 import { Vector } from "./vector";
@@ -6,7 +6,7 @@ import { IS_MOBILE, SUPPORT_TOUCH } from "./config";
 import { SOUNDS } from "../platform/sound";
 import { GLOBAL_APP } from "./globals";
 
-const logger = createLogger("click_detector");
+const logger = new Logger("click_detector");
 
 export const MAX_MOVE_DISTANCE_PX = IS_MOBILE ? 20 : 80;
 
@@ -83,16 +83,25 @@ export class ClickDetector {
         this.preventClick = preventClick;
 
         // Signals
+        /** @type {Signal<[Vector, TouchEvent | MouseEvent]>} */
         this.click = new Signal();
+        /** @type {Signal<[Vector, MouseEvent]>} */
         this.rightClick = new Signal();
+        /** @type {Signal<[TouchEvent | MouseEvent]>} */
         this.touchstart = new Signal();
+        /** @type {Signal<[TouchEvent | MouseEvent]>} */
         this.touchmove = new Signal();
+        /** @type {Signal<[TouchEvent | MouseEvent]>} */
         this.touchend = new Signal();
+        /** @type {Signal<[TouchEvent | MouseEvent]>} */
         this.touchcancel = new Signal();
 
         // Simple signals which just receive the touch position
+        /** @type {Signal<[number, number]>} */
         this.touchstartSimple = new Signal();
+        /** @type {Signal<[number, number]>} */
         this.touchmoveSimple = new Signal();
+        /** @type {Signal<[(TouchEvent | MouseEvent)?]>} */
         this.touchendSimple = new Signal();
 
         // Store time of touch start

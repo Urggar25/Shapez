@@ -1,6 +1,6 @@
 import { clickDetectorGlobals } from "../core/click_detector";
 import { globalConfig, SUPPORT_TOUCH } from "../core/config";
-import { createLogger } from "../core/logging";
+import { Logger } from "../core/logging";
 import { Rectangle } from "../core/rectangle";
 import { Signal, STOP_PROPAGATION } from "../core/signal";
 import { clamp } from "../core/utils";
@@ -9,8 +9,9 @@ import { BasicSerializableObject, types } from "../savegame/serialization";
 import { KEYMAPPINGS } from "./key_action_mapper";
 import { GameRoot } from "./root";
 
-const logger = createLogger("camera");
+const logger = new Logger("camera");
 
+// @TODO: unused signal
 export const USER_INTERACT_MOVE = "move";
 export const USER_INTERACT_ZOOM = "zoom";
 export const USER_INTERACT_TOUCHEND = "touchend";
@@ -60,10 +61,8 @@ export class Camera extends BasicSerializableObject {
         this.keyboardForce = new Vector();
 
         // Signal which gets emitted once the user changed something
+        /** @type {Signal<[string]>} */
         this.userInteraction = new Signal();
-
-        /** @type {Vector} */
-        this.currentShake = new Vector(0, 0);
 
         /** @type {Vector} */
         this.currentPan = new Vector(0, 0);
@@ -84,10 +83,10 @@ export class Camera extends BasicSerializableObject {
         this.touchPostMoveVelocity = new Vector(0, 0);
 
         // Handlers
-        this.downPreHandler = /** @type {TypedSignal<[Vector, enumMouseButton]>} */ (new Signal());
-        this.movePreHandler = /** @type {TypedSignal<[Vector]>} */ (new Signal());
-        // this.pinchPreHandler = /** @type {TypedSignal<[Vector]>} */ (new Signal());
-        this.upPostHandler = /** @type {TypedSignal<[Vector]>} */ (new Signal());
+        this.downPreHandler = /** @type {Signal<[Vector, enumMouseButton]>} */ (new Signal());
+        this.movePreHandler = /** @type {Signal<[Vector]>} */ (new Signal());
+        // this.pinchPreHandler = /** @type {Signal<[Vector]>} */ (new Signal());
+        this.upPostHandler = /** @type {Signal<[Vector]>} */ (new Signal());
 
         this.internalInitEvents();
         this.clampZoomLevel();
@@ -125,13 +124,6 @@ export class Camera extends BasicSerializableObject {
 
     // Simple getters & setters
 
-    addScreenShake(amount) {
-        const currentShakeAmount = this.currentShake.length();
-        const scale = 1 / (1 + 3 * currentShakeAmount);
-        this.currentShake.x = this.currentShake.x + 2 * (Math.random() - 0.5) * scale * amount;
-        this.currentShake.y = this.currentShake.y + 2 * (Math.random() - 0.5) * scale * amount;
-    }
-
     /**
      * Sets a point in world space to focus on
      * @param {Vector} center
@@ -168,7 +160,11 @@ export class Camera extends BasicSerializableObject {
      * Finds a good initial zoom level
      */
     findInitialZoom() {
-        const desiredWorldSpaceWidth = 15 * globalConfig.tileSize;
+        let desiredWorldSpaceWidth = 18 * globalConfig.tileSize;
+        if (window.innerWidth < 1000) {
+            desiredWorldSpaceWidth = 12 * globalConfig.tileSize;
+        }
+
         const zoomLevelX = this.root.gameWidth / desiredWorldSpaceWidth;
         const zoomLevelY = this.root.gameHeight / desiredWorldSpaceWidth;
 
@@ -253,28 +249,28 @@ export class Camera extends BasicSerializableObject {
      * Returns effective world space viewport left
      */
     getViewportLeft() {
-        return this.center.x - this.getViewportWidth() / 2 + (this.currentShake.x * 10) / this.zoomLevel;
+        return this.center.x - this.getViewportWidth() / 2;
     }
 
     /**
      * Returns effective world space viewport right
      */
     getViewportRight() {
-        return this.center.x + this.getViewportWidth() / 2 + (this.currentShake.x * 10) / this.zoomLevel;
+        return this.center.x + this.getViewportWidth() / 2;
     }
 
     /**
      * Returns effective world space viewport top
      */
     getViewportTop() {
-        return this.center.y - this.getViewportHeight() / 2 + (this.currentShake.x * 10) / this.zoomLevel;
+        return this.center.y - this.getViewportHeight() / 2;
     }
 
     /**
      * Returns effective world space viewport bottom
      */
     getViewportBottom() {
-        return this.center.y + this.getViewportHeight() / 2 + (this.currentShake.x * 10) / this.zoomLevel;
+        return this.center.y + this.getViewportHeight() / 2;
     }
 
     /**
@@ -601,13 +597,13 @@ export class Camera extends BasicSerializableObject {
                 const difference = thisDistance / Math.max(0.001, lastDistance);
 
                 // Find old center of zoom
-                let oldCenter = this.lastPinchPositions[0].centerPoint(this.lastPinchPositions[1]);
+                const oldCenter = this.lastPinchPositions[0].centerPoint(this.lastPinchPositions[1]);
 
                 // Find new center of zoom
                 let center = newPinchPositions[0].centerPoint(newPinchPositions[1]);
 
                 // Compute movement
-                let movement = oldCenter.sub(center);
+                const movement = oldCenter.sub(center);
                 this.center.x += movement.x / this.zoomLevel;
                 this.center.y += movement.y / this.zoomLevel;
 
@@ -795,7 +791,6 @@ export class Camera extends BasicSerializableObject {
             this.internalUpdateMousePanning(now, physicsStepSizeMs);
             this.internalUpdateZooming(now, physicsStepSizeMs);
             this.internalUpdateCentering(now, physicsStepSizeMs);
-            this.internalUpdateShake(now, physicsStepSizeMs);
             this.internalUpdateKeyboardForce(now, physicsStepSizeMs);
         }
         this.clampZoomLevel();
@@ -825,15 +820,6 @@ export class Camera extends BasicSerializableObject {
             -zoom * this.getViewportLeft(),
             -zoom * this.getViewportTop()
         );
-    }
-
-    /**
-     * Internal shake handler
-     * @param {number} now Time now in seconds
-     * @param {number} dt Delta time
-     */
-    internalUpdateShake(now, dt) {
-        this.currentShake = this.currentShake.multiplyScalar(0.92);
     }
 
     /**
@@ -1022,7 +1008,7 @@ export class Camera extends BasicSerializableObject {
                 forceX += 1;
             }
 
-            let movementSpeed =
+            const movementSpeed =
                 this.root.app.settings.getMovementSpeed() *
                 (actionMapper.getBinding(KEYMAPPINGS.navigation.mapMoveFaster).pressed ? 4 : 1);
 

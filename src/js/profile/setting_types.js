@@ -2,10 +2,10 @@
 import { Application } from "../application";
 /* typehints:end */
 
-import { createLogger } from "../core/logging";
+import { Logger } from "../core/logging";
 import { T } from "../translations";
 
-const logger = createLogger("setting_types");
+const logger = new Logger("setting_types");
 
 /*
  * ***************************************************
@@ -149,6 +149,7 @@ export class EnumSetting extends BaseSetting {
      */
     getHtml(app) {
         const available = this.getIsAvailable(app);
+
         return `
             <div class="setting cardbox ${available ? "enabled" : "disabled"}">
                 ${available ? "" : `<span class="standaloneOnlyHint">${T.demo.settingNotAvailable}</span>`}
@@ -226,6 +227,7 @@ export class BoolSetting extends BaseSetting {
      * @param {Application} app
      */
     getHtml(app) {
+        // TODO: Rewrite the settings system entirely
         const available = this.getIsAvailable(app);
         return `
         <div class="setting cardbox ${available ? "enabled" : "disabled"}">
@@ -296,8 +298,8 @@ export class RangeSetting extends BaseSetting {
                 <div class="value rangeInputContainer noPressEffect" data-setting="${this.id}">
                     <label>${this.defaultValue}</label>
                     <input class="rangeInput" type="range" value="${this.defaultValue}" min="${
-            this.minValue
-        }" max="${this.maxValue}" step="${this.stepSize}">
+                        this.minValue
+                    }" max="${this.maxValue}" step="${this.stepSize}">
                 </div>
             </div>
             <div class="desc">

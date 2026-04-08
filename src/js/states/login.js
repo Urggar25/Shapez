@@ -30,11 +30,6 @@ export class LoginState extends GameState {
             throw new Error("No next state id");
         }
 
-        if (this.app.clientApi.isLoggedIn()) {
-            this.finishLoading();
-            return;
-        }
-
         this.dialogs = new HUDModalDialogs(null, this.app);
         const dialogsElement = document.body.querySelector(".modalDialogParent");
         this.dialogs.initializeToElement(dialogsElement);
@@ -59,7 +54,9 @@ export class LoginState extends GameState {
                     T.dialogs.offlineMode.desc,
                     ["retry", "playOffline:bad"]
                 );
-                signals.retry.add(() => setTimeout(() => this.tryLogin(), 2000), this);
+                signals.retry.add(() => {
+                    setTimeout(() => this.tryLogin(), 2000);
+                }, this);
                 signals.playOffline.add(this.finishLoading, this);
             } else {
                 this.finishLoading();

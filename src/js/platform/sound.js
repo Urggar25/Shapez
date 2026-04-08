@@ -1,14 +1,16 @@
 /* typehints:start */
 import { Application } from "../application";
-import { Vector } from "../core/vector";
-import { GameRoot } from "../game/root";
 /* typehints:end */
 
-import { newEmptyMap, clamp } from "../core/utils";
-import { createLogger } from "../core/logging";
+import { Howl, Howler } from "howler";
 import { globalConfig } from "../core/config";
+import { Logger } from "../core/logging";
+import { clamp, newEmptyMap } from "../core/utils";
 
-const logger = createLogger("sound");
+// @ts-ignore
+import sprites from "../built-temp/sfx.json";
+
+const logger = new Logger("sound");
 
 export const SOUNDS = {
     // Menu and such
@@ -26,18 +28,19 @@ export const SOUNDS = {
     placeBuilding: "place_building",
     placeBelt: "place_belt",
     copy: "copy",
+    unlockUpgrade: "unlock_upgrade",
+    tutorialStep: "tutorial_step",
 };
 
 export const MUSIC = {
     // The theme always depends on the standalone only, even if running the full
     // version in the browser
-    theme: G_IS_STANDALONE ? "theme-full" : "theme-short",
-    menu: "menu",
+    theme: "theme-full",
 };
 
-if (G_IS_STANDALONE || G_IS_DEV) {
-    MUSIC.puzzle = "puzzle-full";
-}
+MUSIC.menu = "menu";
+
+MUSIC.puzzle = "puzzle-full";
 
 export class SoundInstanceInterface {
     constructor(key, url) {
@@ -147,12 +150,15 @@ export class SoundInterface {
      * @returns {Promise<void>}
      */
     loadSound(key) {
+        if (!key) {
+            return Promise.resolve();
+        }
         if (this.sounds[key]) {
             return this.sounds[key].load();
         } else if (this.music[key]) {
             return this.music[key].load();
         } else {
-            logger.error("Sound/Music by key not found:", key);
+            logger.warn("Sound/Music by key not found:", key);
             return Promise.resolve();
         }
     }
@@ -236,39 +242,11 @@ export class SoundInterface {
     }
 
     /**
-     *
-     * @param {string} key
-     * @param {Vector} worldPosition
-     * @param {GameRoot} root
-     */
-    play3DSound(key, worldPosition, root) {
-        if (!this.sounds[key]) {
-            logger.warn("Music", key, "not found, probably not loaded yet");
-            return;
-        }
-        if (!this.pageIsVisible) {
-            return;
-        }
-
-        // hack, but works
-        if (root.time.getIsPaused()) {
-            return;
-        }
-
-        let volume = this.soundVolume;
-        if (!root.camera.isWorldPointOnScreen(worldPosition)) {
-            volume = this.soundVolume / 5; // In the old implementation this value was fixed to 0.2 => 20% of 1.0
-        }
-        volume *= clamp(root.camera.zoomLevel / 3);
-        this.sounds[key].play(clamp(volume));
-    }
-
-    /**
      * @param {string} key
      */
     playThemeMusic(key) {
         const music = this.music[key];
-        if (key !== null && !music) {
+        if (key && !music) {
             logger.warn("Music", key, "not found");
         }
         if (this.currentMusic !== music) {
@@ -282,5 +260,202 @@ export class SoundInterface {
                 music.play(this.musicVolume);
             }
         }
+    }
+}
+
+class SoundSpritesContainer {
+    constructor() {
+        this.howl = null;
+
+        this.loadingPromise = null;
+    }
+
+    load() {
+        if (this.loadingPromise) {
+            return this.loadingPromise;
+        }
+        return (this.loadingPromise = new Promise(resolve => {
+            this.howl = new Howl({
+                src: "res/sounds/sfx.mp3",
+                sprite: sprites.sprite,
+                autoplay: false,
+                loop: false,
+                volume: 0,
+                preload: true,
+                pool: 20,
+                onload: () => {
+                    resolve();
+                },
+                onloaderror: (id, err) => {
+                    logger.warn("SFX failed to load:", id, err);
+                    this.howl = null;
+                    resolve();
+                },
+                onplayerror: (id, err) => {
+                    logger.warn("SFX failed to play:", id, err);
+                },
+            });
+        }));
+    }
+
+    play(volume, key) {
+        if (this.howl) {
+            const instance = this.howl.play(key);
+            this.howl.volume(volume, instance);
+        }
+    }
+
+    deinitialize() {
+        if (this.howl) {
+            this.howl.unload();
+            this.howl = null;
+        }
+    }
+}
+
+class WrappedSoundInstance extends SoundInstanceInterface {
+    /**
+     *
+     * @param {SoundSpritesContainer} spriteContainer
+     * @param {string} key
+     */
+    constructor(spriteContainer, key) {
+        super(key, "sfx.mp3");
+        this.spriteContainer = spriteContainer;
+    }
+
+    /** @returns {Promise<void>} */
+    load() {
+        return this.spriteContainer.load();
+    }
+
+    play(volume) {
+        this.spriteContainer.play(volume, this.key);
+    }
+
+    deinitialize() {
+        return this.spriteContainer.deinitialize();
+    }
+}
+
+class MusicInstance extends MusicInstanceInterface {
+    constructor(key, url) {
+        super(key, url);
+        this.howl = null;
+        this.instance = null;
+        this.playing = false;
+    }
+    load() {
+        return new Promise((resolve, reject) => {
+            this.howl = new Howl({
+                src: "res/sounds/music/" + this.url + ".mp3",
+                autoplay: false,
+                loop: true,
+                html5: true,
+                volume: 1,
+                preload: true,
+                pool: 2,
+
+                onunlock: () => {
+                    if (this.playing) {
+                        logger.log("Playing music after manual unlock");
+                        this.play();
+                    }
+                },
+
+                onload: () => {
+                    resolve();
+                },
+                onloaderror: (id, err) => {
+                    logger.warn(this, "Music", this.url, "failed to load:", id, err);
+                    this.howl = null;
+                    resolve();
+                },
+
+                onplayerror: (id, err) => {
+                    logger.warn(this, "Music", this.url, "failed to play:", id, err);
+                },
+            });
+        });
+    }
+
+    stop() {
+        if (this.howl && this.instance) {
+            this.playing = false;
+            this.howl.pause(this.instance);
+        }
+    }
+
+    isPlaying() {
+        return this.playing;
+    }
+
+    play(volume) {
+        if (this.howl) {
+            this.playing = true;
+            this.howl.volume(volume);
+            if (this.instance) {
+                this.howl.play(this.instance);
+            } else {
+                this.instance = this.howl.play();
+            }
+        }
+    }
+
+    setVolume(volume) {
+        if (this.howl) {
+            this.howl.volume(volume);
+        }
+    }
+
+    deinitialize() {
+        if (this.howl) {
+            this.howl.unload();
+            this.howl = null;
+            this.instance = null;
+        }
+    }
+}
+
+export class Sound extends SoundInterface {
+    constructor(app) {
+        Howler.mobileAutoEnable = true;
+        Howler.autoUnlock = true;
+        Howler.autoSuspend = false;
+        Howler.html5PoolSize = 20;
+        Howler.pos(0, 0, 0);
+
+        super(app, WrappedSoundInstance, MusicInstance);
+    }
+
+    initialize() {
+        // NOTICE: We override the initialize() method here with custom logic because
+        // we have a sound sprites instance
+
+        this.sfxHandle = new SoundSpritesContainer();
+
+        // @ts-ignore
+        const keys = Object.values(SOUNDS);
+        keys.forEach(key => {
+            this.sounds[key] = new WrappedSoundInstance(this.sfxHandle, key);
+        });
+        for (const musicKey in MUSIC) {
+            const musicPath = MUSIC[musicKey];
+            const music = new this.musicClass(musicKey, musicPath);
+            this.music[musicPath] = music;
+        }
+
+        this.musicVolume = this.app.settings.getAllSettings().musicVolume;
+        this.soundVolume = this.app.settings.getAllSettings().soundVolume;
+
+        if (G_IS_DEV && globalConfig.debug.disableMusic) {
+            this.musicVolume = 0.0;
+        }
+
+        return Promise.resolve();
+    }
+
+    deinitialize() {
+        return super.deinitialize().then(() => Howler.unload());
     }
 }

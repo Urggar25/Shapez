@@ -2,23 +2,22 @@ import { globalConfig } from "../../core/config";
 import { DrawParameters } from "../../core/draw_parameters";
 import { gMetaBuildingRegistry } from "../../core/global_registries";
 import { Loader } from "../../core/loader";
-import { createLogger } from "../../core/logging";
+import { Logger } from "../../core/logging";
 import { AtlasSprite } from "../../core/sprites";
 import { fastArrayDeleteValue } from "../../core/utils";
 import { enumDirection, enumDirectionToVector, enumInvertedDirections, Vector } from "../../core/vector";
 import { BeltPath } from "../belt_path";
-import { arrayBeltVariantToRotation, MetaBeltBuilding } from "../buildings/belt";
 import { getCodeFromBuildingData } from "../building_codes";
+import { arrayBeltVariantToRotation, MetaBeltBuilding } from "../buildings/belt";
 import { BeltComponent } from "../components/belt";
 import { Entity } from "../entity";
 import { GameSystem } from "../game_system";
-import { GameSystemWithFilter } from "../game_system_with_filter";
 import { MapChunkView } from "../map_chunk_view";
 import { defaultBuildingVariant } from "../meta_building";
 
 export const BELT_ANIM_COUNT = 14;
 
-const logger = createLogger("belt");
+const logger = new Logger("belt");
 
 /**
  * Manages all belts
@@ -151,16 +150,14 @@ export class BeltSystem extends GameSystem {
                         continue;
                     }
 
-                    const {
-                        rotation,
-                        rotationVariant,
-                    } = metaBelt.computeOptimalDirectionAndRotationVariantAtTile({
-                        root: this.root,
-                        tile: new Vector(x, y),
-                        rotation: targetStaticComp.originalRotation,
-                        variant: defaultBuildingVariant,
-                        layer: targetEntity.layer,
-                    });
+                    const { rotation, rotationVariant } =
+                        metaBelt.computeOptimalDirectionAndRotationVariantAtTile({
+                            root: this.root,
+                            tile: new Vector(x, y),
+                            rotation: targetStaticComp.originalRotation,
+                            variant: defaultBuildingVariant,
+                            layer: targetEntity.layer,
+                        });
 
                     // Compute delta to see if anything changed
                     const newDirection = arrayBeltVariantToRotation[rotationVariant];
@@ -426,10 +423,9 @@ export class BeltSystem extends GameSystem {
 
         const result = [];
 
-        const beltEntities = this.root.entityMgr.getAllWithComponent(BeltComponent);
+        const beltEntities = this.root.entityMgr.getEntitiesWithComponent(BeltComponent);
 
-        for (let i = 0; i < beltEntities.length; ++i) {
-            const entity = beltEntities[i];
+        for (const entity of beltEntities) {
             if (visitedUids.has(entity.uid)) {
                 continue;
             }
@@ -535,7 +531,13 @@ export class BeltSystem extends GameSystem {
                     }
 
                     // Culling happens within the static map entity component
-                    entity.components.StaticMapEntity.drawSpriteOnBoundsClipped(parameters, sprite, 0);
+                    entity.components.StaticMapEntity.drawSpriteOnBoundsClipped(
+                        parameters,
+                        sprite,
+                        0,
+                        null,
+                        true
+                    );
                 }
             }
         } else {
@@ -546,7 +548,13 @@ export class BeltSystem extends GameSystem {
                     const sprite = this.beltAnimations[direction][animationIndex % BELT_ANIM_COUNT];
 
                     // Culling happens within the static map entity component
-                    entity.components.StaticMapEntity.drawSpriteOnBoundsClipped(parameters, sprite, 0);
+                    entity.components.StaticMapEntity.drawSpriteOnBoundsClipped(
+                        parameters,
+                        sprite,
+                        0,
+                        null,
+                        true
+                    );
                 }
             }
         }

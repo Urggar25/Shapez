@@ -1,3 +1,8 @@
+@use "../mixins" as *;
+@use "../variables" as *;
+
+@use "sass:color";
+
 #state_InGameState {
     .gameLoadingOverlay {
         position: absolute;
@@ -16,16 +21,16 @@
 
     .prefab_GameHint {
         position: absolute;
-        @include S(bottom, 40px);
-        @include S(left, 20px);
-        @include S(right, 20px);
+        bottom: 4rem;
+        left: 2rem;
+        right: 2rem;
         @include PlainText;
         text-align: center;
 
         color: #666;
 
         @include DarkThemeOverride() {
-            color: lighten($darkModeGameBackground, 50);
+            color: color.adjust($darkModeGameBackground, $lightness: 50%, $space: hsl);
         }
     }
 

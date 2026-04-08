@@ -1,20 +1,18 @@
-#state_PreloadState {
-    &.failure {
-        .loadingImage,
-        .loadingStatus {
-            display: none;
-        }
-    }
+@use "../game_state" as *;
+@use "../mixins" as *;
+@use "../variables" as *;
 
+#state_PreloadState {
     .changelogDialogEntry {
-        margin-top: 10px;
+        margin-top: 1rem;
+
         width: 100%;
         flex-direction: column;
         text-align: left;
         padding: 10px;
         box-sizing: border-box;
         background: #eef1f4;
-        @include S(border-radius, 3px);
+        border-radius: $globalBorderRadius;
 
         @include DarkThemeOverride {
             background: #33343c;
@@ -33,31 +31,44 @@
 
         .changes {
             @include PlainText;
-            @include S(padding-left, 15px);
+            padding-left: 1.5rem;
+            margin-top: 1rem;
             strong {
                 background: $colorBlueBright;
                 color: #fff;
                 text-transform: uppercase;
-                @include S(padding, 1px, 2px);
-                @include S(margin-right, 3px);
+                padding: 0.1rem 0.2rem;
+                margin-right: 0.3rem;
             }
             a {
                 color: $colorBlueBright;
             }
             li {
                 @include SuperSmallText;
-                @include S(margin-bottom, 10px);
+                margin-bottom: 0.5rem;
             }
         }
     }
 
     .failureBox {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999999;
+        background: #d5d8de;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+
         .logo {
             img {
-                @include S(width, 240px);
+                width: 24rem;
             }
 
-            @include S(margin-bottom, 30px);
+            margin-bottom: 3rem;
         }
 
         @include InlineAnimation(0.3s ease-in-out) {
@@ -71,13 +82,13 @@
 
         .failureInner {
             // background: darken($mainBgColor, 6);
-            @include S(max-width, 350px);
+            max-width: 35rem;
             margin: 0 20px;
             text-align: left;
 
             @include BoxShadow3D(#fff);
-            @include S(padding, 15px);
-            @include S(border-radius, $globalBorderRadius);
+            padding: 1.5rem;
+            border-radius: $globalBorderRadius;
             @include DropShadow;
 
             .errorHeader {
@@ -89,16 +100,15 @@
                 display: block;
                 color: #666;
                 text-align: left;
-                @include BreakText;
+                overflow-wrap: break-word;
                 hyphens: auto;
                 // border: dotted #666;
-                // @include S(border-width, 1px, 0);
-                @include S(padding, 10px, 0);
-                @include S(margin-top, 10px);
+                padding: 1rem 0;
+                margin-top: 1rem;
             }
 
             .supportHelp {
-                @include S(margin-top, 10px);
+                margin-top: 1rem;
                 @include PlainText;
 
                 .email {
@@ -111,7 +121,7 @@
             .lower {
                 display: flex;
                 align-items: center;
-                @include S(margin-top, 16px);
+                margin-top: 1.6rem;
 
                 i {
                     flex-grow: 1;
@@ -123,7 +133,7 @@
                 button.resetApp {
                     @include Button3D($colorRedBright);
                     @include PlainText;
-                    @include S(padding, 5px, 8px, 4px);
+                    padding: 0.5rem 0.8rem 0.4rem;
                     color: #fff;
                 }
             }
@@ -132,7 +142,7 @@
 
     /* Animations */
     .status {
-        transform: scale(0.7) $hardwareAcc;
+        transform: scale(0.7);
         opacity: 0;
         @include StateAnim(transform, opacity);
     }

@@ -1,262 +1,46 @@
-const path = require("path");
+import { rspack } from "@rspack/core";
+import { BUILD_VARIANTS } from "./build_variants.js";
 
-function requireUncached(module) {
-    delete require.cache[require.resolve(module)];
-    return require(module);
-}
+import rspackConfig from "./rspack.config.js";
+import rspackProductionConfig from "./rspack.production.config.js";
 
-function gulptasksJS($, gulp, buildFolder, browserSync) {
-    //// DEV
-
-    gulp.task("js.dev.watch", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.config.js")({
-                        watch: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder))
-            .pipe(browserSync.stream());
-    });
-
-    gulp.task("js.dev", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe($.webpackStream(requireUncached("./webpack.config.js")({})))
-            .pipe(gulp.dest(buildFolder));
-    });
-
-    //// DEV CHINA
-
-    gulp.task("china.js.dev.watch", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.config.js")({
-                        watch: true,
-                        chineseVersion: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder))
-            .pipe(browserSync.stream());
-    });
-
-    gulp.task("china.js.dev", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.config.js")({
-                        chineseVersion: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder));
-    });
-
-    //// DEV WEGAME
-
-    gulp.task("wegame.js.dev.watch", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.config.js")({
-                        watch: true,
-                        wegameVersion: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder))
-            .pipe(browserSync.stream());
-    });
-
-    gulp.task("wegame.js.dev", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.config.js")({
-                        wegameVersion: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder));
-    });
-
-    //// STAGING
-
-    gulp.task("js.staging.transpiled", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.production.config.js")({
-                        enableAssert: true,
-                        environment: "staging",
-                        es6: false,
-                    })
-                )
-            )
-            .pipe($.rename("bundle-transpiled.js"))
-            .pipe(gulp.dest(buildFolder));
-    });
-
-    gulp.task("js.staging.latest", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.production.config.js")({
-                        enableAssert: true,
-                        environment: "staging",
-                        es6: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder));
-    });
-    gulp.task("js.staging", gulp.parallel("js.staging.transpiled", "js.staging.latest"));
-
-    //// PROD
-
-    gulp.task("js.prod.transpiled", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.production.config.js")({
-                        enableAssert: false,
-                        environment: "prod",
-                        es6: false,
-                    })
-                )
-            )
-            .pipe($.rename("bundle-transpiled.js"))
-            .pipe(gulp.dest(buildFolder))
-            .pipe(browserSync.stream());
-    });
-
-    gulp.task("js.prod.latest", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.production.config.js")({
-                        enableAssert: false,
-                        environment: "prod",
-                        es6: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder))
-            .pipe(browserSync.stream());
-    });
-
-    gulp.task("js.prod", gulp.parallel("js.prod.transpiled", "js.prod.latest"));
-
-    //// STANDALONE
-
-    gulp.task("js.standalone-dev.watch", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.config.js")({
-                        watch: true,
-                        standalone: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder))
-            .pipe(browserSync.stream());
-    });
-
-    gulp.task("js.standalone-dev", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.config.js")({
-                        standalone: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder));
-    });
-
-    gulp.task("js.standalone-beta", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.production.config.js")({
-                        enableAssert: true,
-                        environment: "staging",
-                        es6: true,
-                        standalone: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder));
-    });
-
-    gulp.task("js.standalone-prod", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.production.config.js")({
-                        enableAssert: false,
-                        environment: "prod",
-                        es6: true,
-                        standalone: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder));
-    });
-
-    gulp.task("china.js.standalone-prod", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.production.config.js")({
-                        enableAssert: false,
-                        environment: "prod",
-                        es6: true,
-                        standalone: true,
-                        chineseVersion: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder));
-    });
-
-    gulp.task("wegame.js.standalone-prod", () => {
-        return gulp
-            .src("../src/js/main.js")
-            .pipe(
-                $.webpackStream(
-                    requireUncached("./webpack.production.config.js")({
-                        enableAssert: false,
-                        environment: "prod",
-                        es6: false,
-                        standalone: true,
-                        wegameVersion: true,
-                    })
-                )
-            )
-            .pipe(gulp.dest(buildFolder));
+/**
+ * @param {import("@rspack/core").Configuration} config
+ * @returns {Promise<void>}
+ */
+function runRspack(config) {
+    return new Promise((resolve, reject) => {
+        rspack(config, (err, stats) => {
+            if (err || stats.hasErrors()) {
+                console.error(stats?.toString("errors-only") || err);
+                return reject(new Error("Build failed"));
+            }
+            resolve();
+        });
     });
 }
 
-module.exports = {
-    gulptasksJS,
-};
+/**
+ * PROVIDES (per <variant>)
+ *
+ * js.<variant>.dev.watch
+ * js.<variant>.dev
+ * js.<variant>.prod
+ *
+ */
+
+// TODO: Move webpack config to build_variants.js and use a separate
+// build variant for development
+export default Object.fromEntries(
+    Object.entries(BUILD_VARIANTS).map(([variant, data]) => {
+        const dev = {
+            build: () => runRspack(rspackConfig),
+        };
+
+        const prod = {
+            build: () => runRspack(rspackProductionConfig),
+        };
+
+        return [variant, { dev, prod }];
+    })
+);

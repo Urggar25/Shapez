@@ -1,6 +1,6 @@
 import { ExplainedResult } from "../core/explained_result";
 import { gComponentRegistry } from "../core/global_registries";
-import { createLogger } from "../core/logging";
+import { Logger } from "../core/logging";
 import { MOD_SIGNALS } from "../mods/mod_signals";
 import { SerializerInternal } from "./serializer_internal";
 
@@ -12,7 +12,7 @@ import { SerializerInternal } from "./serializer_internal";
  * @typedef {import("../savegame/savegame_typedefs").SerializedGame} SerializedGame
  */
 
-const logger = createLogger("savegame_serializer");
+const logger = new Logger("savegame_serializer");
 
 /**
  * Serializes a savegame
@@ -37,7 +37,7 @@ export class SavegameSerializer {
             gameMode: root.gameMode.serialize(),
             entityMgr: root.entityMgr.serialize(),
             hubGoals: root.hubGoals.serialize(),
-            entities: this.internal.serializeEntityArray(root.entityMgr.entities),
+            entities: this.internal.serializeEntityMap(root.entityMgr.entities),
             beltPaths: root.systemMgr.systems.belt.serializePaths(),
             pinnedShapes: root.hud.parts.pinnedShapes ? root.hud.parts.pinnedShapes.serialize() : null,
             waypoints: root.hud.parts.waypoints ? root.hud.parts.waypoints.serialize() : null,

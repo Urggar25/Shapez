@@ -3,43 +3,11 @@ import { T } from "../translations";
 const bigNumberSuffixTranslationKeys = ["thousands", "millions", "billions", "trillions"];
 
 /**
- * Returns if this platform is android
- * @returns {boolean}
- */
-export function isAndroid() {
-    if (!G_IS_MOBILE_APP) {
-        return false;
-    }
-    const platform = window.device.platform;
-    return platform === "Android" || platform === "amazon-fireos";
-}
-
-/**
- * Returns if this platform is iOs
- * @returns {boolean}
- */
-export function isIos() {
-    if (!G_IS_MOBILE_APP) {
-        return false;
-    }
-    return window.device.platform === "iOS";
-}
-
-/**
  * Returns a platform name
- * @returns {"android" | "browser" | "ios" | "standalone" | "unknown"}
+ * @returns {"standalone"}
  */
 export function getPlatformName() {
-    if (G_IS_STANDALONE) {
-        return "standalone";
-    } else if (G_IS_BROWSER) {
-        return "browser";
-    } else if (G_IS_MOBILE_APP && isAndroid()) {
-        return "android";
-    } else if (G_IS_MOBILE_APP && isIos()) {
-        return "ios";
-    }
-    return "unknown";
+    return "standalone";
 }
 
 /**
@@ -69,20 +37,7 @@ export function newEmptyMap() {
  * @param {number} end
  */
 export function randomInt(start, end) {
-    return start + Math.round(Math.random() * (end - start));
-}
-
-/**
- * Access an object in a very annoying way, used for obsfuscation.
- * @param {any} obj
- * @param {Array<string>} keys
- */
-export function accessNestedPropertyReverse(obj, keys) {
-    let result = obj;
-    for (let i = keys.length - 1; i >= 0; --i) {
-        result = result[keys[i]];
-    }
-    return result;
+    return Math.floor(Math.random() * (end - start + 1) + start);
 }
 
 /**
@@ -438,50 +393,9 @@ export function makeButton(parent, classes = [], innerHTML = "") {
  */
 export function removeAllChildren(elem) {
     if (elem) {
-        var range = document.createRange();
+        const range = document.createRange();
         range.selectNodeContents(elem);
         range.deleteContents();
-    }
-}
-
-/**
- * Returns if the game supports this browser
- */
-export function isSupportedBrowser() {
-    // please note,
-    // that IE11 now returns undefined again for window.chrome
-    // and new Opera 30 outputs true for window.chrome
-    // but needs to check if window.opr is not undefined
-    // and new IE Edge outputs to true now for window.chrome
-    // and if not iOS Chrome check
-    // so use the below updated condition
-
-    if (G_IS_MOBILE_APP || G_IS_STANDALONE) {
-        return true;
-    }
-
-    // @ts-ignore
-    var isChromium = window.chrome;
-    var winNav = window.navigator;
-    var vendorName = winNav.vendor;
-    // @ts-ignore
-    var isIEedge = winNav.userAgent.indexOf("Edge") > -1;
-    var isIOSChrome = winNav.userAgent.match("CriOS");
-
-    if (isIOSChrome) {
-        // is Google Chrome on IOS
-        return false;
-    } else if (
-        isChromium !== null &&
-        typeof isChromium !== "undefined" &&
-        vendorName === "Google Inc." &&
-        isIEedge === false
-    ) {
-        // is Google Chrome
-        return true;
-    } else {
-        // not Google Chrome
-        return false;
     }
 }
 
@@ -678,38 +592,6 @@ export function fillInLinkIntoTranslation(translation, link) {
         .replace("</link>", "</a>");
 }
 
-/**
- * Generates a file download
- * @param {string} filename
- * @param {string} text
- */
-export function generateFileDownload(filename, text) {
-    var element = document.createElement("a");
-    element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(text));
-    element.setAttribute("download", filename);
-
-    element.style.display = "none";
-    document.body.appendChild(element);
-
-    element.click();
-    document.body.removeChild(element);
-}
-
-/**
- * Starts a file chooser
- * @param {string} acceptedType
- */
-export function startFileChoose(acceptedType = ".bin") {
-    var input = document.createElement("input");
-    input.type = "file";
-    input.accept = acceptedType;
-
-    return new Promise(resolve => {
-        input.onchange = _ => resolve(input.files[0]);
-        input.click();
-    });
-}
-
 const MAX_ROMAN_NUMBER = 49;
 const romanLiteralsCache = ["0"];
 
@@ -719,10 +601,6 @@ const romanLiteralsCache = ["0"];
  * @returns {string}
  */
 export function getRomanNumber(number) {
-    if (G_WEGAME_VERSION) {
-        return String(number);
-    }
-
     number = Math.max(0, Math.round(number));
     if (romanLiteralsCache[number]) {
         return romanLiteralsCache[number];
@@ -772,4 +650,17 @@ export function getRomanNumber(number) {
 
     romanLiteralsCache[number] = formatted;
     return formatted;
+}
+
+/**
+ * Rejects a promise after X ms
+ * @param {Promise} promise
+ */
+export function timeoutPromise(promise, timeout = 30000) {
+    return Promise.race([
+        new Promise((resolve, reject) => {
+            setTimeout(() => reject("timeout of " + timeout + " ms exceeded"), timeout);
+        }),
+        promise,
+    ]);
 }

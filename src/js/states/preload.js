@@ -1,30 +1,16 @@
 import { CHANGELOG } from "../changelog";
-import { getLogoSprite } from "../core/background_resources_loader";
-import { cachebust } from "../core/cachebust";
 import { globalConfig } from "../core/config";
 import { GameState } from "../core/game_state";
-import { createLogger } from "../core/logging";
+import { Logger } from "../core/logging";
 import { getRandomHint } from "../game/hints";
 import { HUDModalDialogs } from "../game/hud/parts/modal_dialogs";
-import { PlatformWrapperImplBrowser } from "../platform/browser/wrapper";
-import { autoDetectLanguageId, T, updateApplicationLanguage } from "../translations";
+import { T, autoDetectLanguageId, updateApplicationLanguage } from "../translations";
 
-const logger = createLogger("state/preload");
+const logger = new Logger("state/preload");
 
 export class PreloadState extends GameState {
     constructor() {
         super("PreloadState");
-    }
-
-    getInnerHTML() {
-        return `
-            <div class="loadingImage"></div>
-            <div class="loadingStatus">
-                <span class="desc">${G_CHINA_VERSION || G_WEGAME_VERSION ? "加载中" : "Booting"}</span>
-                </div>
-            </div>
-            <span class="prefab_GameHint"></span>
-        `;
     }
 
     getThemeMusic() {
@@ -35,28 +21,24 @@ export class PreloadState extends GameState {
         return false;
     }
 
+    getRemovePreviousContent() {
+        return false;
+    }
+
     onEnter() {
-        this.htmlElement.classList.add("prefab_LoadingState");
-
-        const elementsToRemove = ["#loadingPreload", "#fontPreload"];
-        for (let i = 0; i < elementsToRemove.length; ++i) {
-            const elem = document.querySelector(elementsToRemove[i]);
-            if (elem) {
-                elem.remove();
-            }
-        }
-
         this.dialogs = new HUDModalDialogs(null, this.app);
         const dialogsElement = document.body.querySelector(".modalDialogParent");
         this.dialogs.initializeToElement(dialogsElement);
 
         /** @type {HTMLElement} */
-        this.statusText = this.htmlElement.querySelector(".loadingStatus > .desc");
-
-        /** @type {HTMLElement} */
-        this.hintsText = this.htmlElement.querySelector(".prefab_GameHint");
+        this.hintsText = this.htmlElement.querySelector("#preload_ll_text");
         this.lastHintShown = -1000;
         this.nextHintDuration = 0;
+
+        /** @type {HTMLElement} */
+        this.statusText = this.htmlElement.querySelector("#ll_preload_status");
+        /** @type {HTMLElement} */
+        this.progressElement = this.htmlElement.querySelector("#ll_progressbar span");
 
         this.startLoading();
     }
@@ -67,41 +49,15 @@ export class PreloadState extends GameState {
 
     startLoading() {
         this.setStatus("Booting")
-
-            .then(() => this.setStatus("Creating platform wrapper"))
+            .then(() => this.setStatus("Creating platform wrapper", 3))
             .then(() => this.app.platformWrapper.initialize())
 
-            .then(() => this.setStatus("Initializing local storage"))
-            .then(() => {
-                const wrapper = this.app.platformWrapper;
-                if (wrapper instanceof PlatformWrapperImplBrowser) {
-                    try {
-                        window.localStorage.setItem("local_storage_test", "1");
-                        window.localStorage.removeItem("local_storage_test");
-                    } catch (ex) {
-                        logger.error("Failed to read/write local storage:", ex);
-                        return new Promise(() => {
-                            alert(
-                                "Your brower does not support thirdparty cookies or you have disabled it in your security settings.\n\n" +
-                                    "In Chrome this setting is called 'Block third-party cookies and site data'.\n\n" +
-                                    "Please allow third party cookies and then reload the page."
-                            );
-                            // Never return
-                        });
-                    }
-                }
-            })
-
-            .then(() => this.setStatus("Creating storage"))
+            .then(() => this.setStatus("Creating storage", 9))
             .then(() => {
                 return this.app.storage.initialize();
             })
 
-            .then(() => this.setStatus("Initializing libraries"))
-            .then(() => this.app.analytics.initialize())
-            .then(() => this.app.gameAnalytics.initialize())
-
-            .then(() => this.setStatus("Initializing settings"))
+            .then(() => this.setStatus("Initializing settings", 20))
             .then(() => {
                 return this.app.settings.initialize();
             })
@@ -113,12 +69,8 @@ export class PreloadState extends GameState {
                 }
             })
 
-            .then(() => this.setStatus("Initializing language"))
+            .then(() => this.setStatus("Initializing language", 25))
             .then(() => {
-                if (G_CHINA_VERSION || G_WEGAME_VERSION) {
-                    return this.app.settings.updateLanguage("zh-CN");
-                }
-
                 if (this.app.settings.getLanguage() === "auto-detect") {
                     const language = autoDetectLanguageId();
                     logger.log("Setting language to", language);
@@ -126,26 +78,20 @@ export class PreloadState extends GameState {
                 }
             })
             .then(() => {
-                const language = this.app.settings.getLanguage();
-                updateApplicationLanguage(language);
+                document.documentElement.setAttribute("lang", this.app.settings.getLanguage());
             })
 
-            .then(() => this.setStatus("Initializing sounds"))
             .then(() => {
-                // Notice: We don't await the sounds loading itself
+                const language = this.app.settings.getLanguage();
+                return updateApplicationLanguage(language);
+            })
+
+            .then(() => this.setStatus("Initializing sounds", 30))
+            .then(() => {
                 return this.app.sound.initialize();
             })
 
-            .then(() => {
-                this.app.backgroundResourceLoader.startLoading();
-            })
-
-            .then(() => this.setStatus("Initializing restrictions"))
-            .then(() => {
-                return this.app.restrictionMgr.initialize();
-            })
-
-            .then(() => this.setStatus("Initializing savegame"))
+            .then(() => this.setStatus("Initializing savegames", 38))
             .then(() => {
                 return this.app.savegameMgr.initialize().catch(err => {
                     logger.error("Failed to initialize savegames:", err);
@@ -156,18 +102,27 @@ export class PreloadState extends GameState {
                 });
             })
 
-            .then(() => this.setStatus("Downloading resources"))
+            .then(() => this.setStatus("Downloading resources", 40))
             .then(() => {
-                return this.app.backgroundResourceLoader.getPromiseForBareGame();
+                this.app.backgroundResourceLoader.resourceStateChangedSignal.add(({ progress }) => {
+                    this.setStatus(
+                        "Downloading resources (" + (progress * 100.0).toFixed(1) + " %)",
+                        40 + progress * 50
+                    );
+                });
+                return this.app.backgroundResourceLoader.getMainMenuPromise().catch(err => {
+                    logger.error("Failed to load resources:", err);
+                    this.app.backgroundResourceLoader.showLoaderError(this.dialogs, err);
+                    return new Promise(() => null);
+                });
+            })
+            .then(() => {
+                this.app.backgroundResourceLoader.resourceStateChangedSignal.removeAll();
             })
 
-            .then(() => this.setStatus("Checking changelog"))
+            .then(() => this.setStatus("Checking changelog", 95))
             .then(() => {
                 if (G_IS_DEV && globalConfig.debug.disableUpgradeNotification) {
-                    return;
-                }
-
-                if (G_CHINA_VERSION || G_WEGAME_VERSION) {
                     return;
                 }
 
@@ -200,9 +155,7 @@ export class PreloadState extends GameState {
                         for (let i = 0; i < changelogEntries.length; ++i) {
                             const entry = changelogEntries[i];
                             dialogHtml += `
-                            <div class="changelogDialogEntry" data-changelog-skin="${
-                                entry.skin || "default"
-                            }">
+                            <div class="changelogDialogEntry">
                                 <span class="version">${entry.version}</span>
                                 <span class="date">${entry.date}</span>
                                 <ul class="changes">
@@ -212,13 +165,13 @@ export class PreloadState extends GameState {
                         `;
                         }
 
-                        return new Promise(resolve => {
+                        return new /** @type {typeof Promise<void>} */ (Promise)(resolve => {
                             this.dialogs.showInfo(T.dialogs.updateSummary.title, dialogHtml).ok.add(resolve);
                         });
                     });
             })
 
-            .then(() => this.setStatus("Launching"))
+            .then(() => this.setStatus("Launching", 99))
             .then(
                 () => {
                     this.moveToState("MainMenuState");
@@ -230,9 +183,6 @@ export class PreloadState extends GameState {
     }
 
     update() {
-        if (G_CHINA_VERSION || G_WEGAME_VERSION) {
-            return;
-        }
         const now = performance.now();
         if (now - this.lastHintShown > this.nextHintDuration) {
             this.lastHintShown = now;
@@ -261,27 +211,24 @@ export class PreloadState extends GameState {
      *
      * @param {string} text
      */
-    setStatus(text) {
+    setStatus(text, progress) {
         logger.log("✅ " + text);
-        if (G_CHINA_VERSION || G_WEGAME_VERSION) {
-            return Promise.resolve();
-        }
+
         this.currentStatus = text;
         this.statusText.innerText = text;
+        this.progressElement.style.width = 80 + (progress / 100) * 20 + "%";
         return Promise.resolve();
     }
 
     showFailMessage(text) {
         logger.error("App init failed:", text);
 
-        const email = "bugs@shapez.io";
-
         const subElement = document.createElement("div");
         subElement.classList.add("failureBox");
 
         subElement.innerHTML = `
                 <div class="logo">
-                    <img src="${cachebust("res/" + getLogoSprite())}" alt="Shapez.io Logo">
+                    <img src="res/logo.png" alt="Shapez.io Logo">
                 </div>
                 <div class="failureInner">
                     <div class="errorHeader">
@@ -291,12 +238,6 @@ export class PreloadState extends GameState {
                         ${this.currentStatus} failed:<br/>
                         ${text}
                     </div>
-
-                    <div class="supportHelp">
-                    Please send me an email with steps to reproduce and what you did before this happened:
-                        <br /><a class="email" href="mailto:${email}?subject=App%20does%20not%20launch">${email}</a>
-                    </div>
-
                     <div class="lower">
                         <button class="resetApp styledButton">Reset App</button>
                         <i>Build ${G_BUILD_VERSION} @ ${G_BUILD_COMMIT_HASH}</i>

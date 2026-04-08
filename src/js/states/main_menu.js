@@ -1,29 +1,19 @@
-import { getLogoSprite } from "../core/background_resources_loader";
-import { cachebust } from "../core/cachebust";
-import { A_B_TESTING_LINK_TYPE, globalConfig, THIRDPARTY_URLS } from "../core/config";
+import { globalConfig, THIRDPARTY_URLS } from "../core/config";
 import { GameState } from "../core/game_state";
 import { DialogWithForm } from "../core/modal_dialog_elements";
 import { FormElementInput } from "../core/modal_dialog_forms";
-import { ReadWriteProxy } from "../core/read_write_proxy";
 import {
     formatSecondsToTimeAgo,
-    generateFileDownload,
-    isSupportedBrowser,
     makeButton,
     makeDiv,
     makeDivElement,
     removeAllChildren,
-    startFileChoose,
     waitNextFrame,
 } from "../core/utils";
 import { HUDModalDialogs } from "../game/hud/parts/modal_dialogs";
 import { MODS } from "../mods/modloader";
-import { PlatformWrapperImplBrowser } from "../platform/browser/wrapper";
-import { PlatformWrapperImplElectron } from "../platform/electron/wrapper";
 import { Savegame } from "../savegame/savegame";
 import { T } from "../translations";
-
-const trim = require("trim");
 
 /**
  * @typedef {import("../savegame/savegame_typedefs").SavegameMetadata} SavegameMetadata
@@ -36,278 +26,140 @@ export class MainMenuState extends GameState {
     }
 
     getInnerHTML() {
-        const showLanguageIcon = !G_CHINA_VERSION && !G_WEGAME_VERSION;
-        const showExitAppButton = G_IS_STANDALONE;
-        const showUpdateLabel = !G_WEGAME_VERSION;
-        const showBrowserWarning = !G_IS_STANDALONE && !isSupportedBrowser();
-        const showPuzzleDLC = !G_WEGAME_VERSION && (G_IS_STANDALONE || G_IS_DEV);
-        const showWegameFooter = G_WEGAME_VERSION;
-        const hasMods = MODS.anyModsActive();
-
-        let showExternalLinks = true;
-
-        if (G_IS_STANDALONE) {
-            if (G_WEGAME_VERSION || G_CHINA_VERSION) {
-                showExternalLinks = false;
-            }
-        } else {
-            const wrapper = /** @type {PlatformWrapperImplBrowser} */ (this.app.platformWrapper);
-            if (!wrapper.embedProvider.externalLinks) {
-                showExternalLinks = false;
-            }
-        }
-
-        let showDiscordLink = showExternalLinks;
-        if (G_CHINA_VERSION) {
-            showDiscordLink = true;
-        }
-
-        const showCrosspromo = !G_IS_STANDALONE && showExternalLinks;
-        const showDemoAdvertisement =
-            showExternalLinks && this.app.restrictionMgr.getIsStandaloneMarketingActive();
-
-        const ownsPuzzleDLC =
-            G_IS_DEV ||
-            (G_IS_STANDALONE &&
-                /** @type { PlatformWrapperImplElectron}*/ (this.app.platformWrapper).dlcs.puzzle);
-
-        const bannerHtml = `
-            <h3>${T.demoBanners.title}</h3>
-            <p>${T.demoBanners.intro}</p>
-
-                    <a href="#" class="steamLink ${A_B_TESTING_LINK_TYPE}" target="_blank">Get the shapez.io standalone!</a>
-        `;
+        const hasMods = MODS.allMods.length > 0;
 
         return `
             <div class="topButtons">
-                ${
-                    showLanguageIcon
-                        ? `<button class="languageChoose" data-languageicon="${this.app.settings.getLanguage()}"></button>`
-                        : ""
-                }
+                <button aria-label="Choose Language" class="languageChoose" data-languageicon="${this.app.settings.getLanguage()}"></button>
 
-                <button class="settingsButton"></button>
-                ${showExitAppButton ? `<button class="exitAppButton"></button>` : ""}
+                <button class="settingsButton" aria-label="Settings"></button>
+                <button class="exitAppButton" aria-label="Exit App"></button>
             </div>
 
             <video autoplay muted loop class="fullscreenBackgroundVideo">
-                <source src="${cachebust("res/bg_render.webm")}" type="video/webm">
+                <source src="res/bg_render.webm" type="video/webm">
             </video>
 
             <div class="logo">
-                <img src="${cachebust("res/" + getLogoSprite())}" alt="shapez.io Logo">
-                ${showUpdateLabel ? `<span class="updateLabel">MODS UPDATE!</span>` : ""}
+                <img src="res/logo.png" alt="shapez.io Logo"
+                    width="${Math.round((710 / 3) * this.app.getEffectiveUiScale())}"
+                    height="${Math.round((180 / 3) * this.app.getEffectiveUiScale())}"
+                >
             </div>
 
-            <div class="mainWrapper" data-columns="${showDemoAdvertisement || showPuzzleDLC ? 2 : 1}">
-                <div class="sideContainer">
-                    ${showDemoAdvertisement ? `<div class="standaloneBanner">${bannerHtml}</div>` : ""}
-                </div>
-
+            <div class="mainWrapper" data-columns="2">
                 <div class="mainContainer">
-                    ${
-                        showBrowserWarning
-                            ? `<div class="browserWarning">${T.mainMenu.browserWarning}</div>`
-                            : ""
-                    }
                     <div class="buttons"></div>
+                    <div class="savegamesMount"></div>
                 </div>
 
+                <div class="sideContainer">
                 ${
-                    showPuzzleDLC && ownsPuzzleDLC && !hasMods
+                    !hasMods
                         ? `
-                    <div class="puzzleContainer">
-                        <img class="dlcLogo" src="${cachebust(
-                            G_CHINA_VERSION || G_WEGAME_VERSION
-                                ? "res/puzzle_dlc_logo_china.png"
-                                : "res/puzzle_dlc_logo.png"
-                        )}" alt="shapez.io Logo">
+                    <div class="puzzleContainer owned">
                         <button class="styledButton puzzleDlcPlayButton">${T.mainMenu.play}</button>
                     </div>`
                         : ""
                 }
 
                 ${
-                    showPuzzleDLC && !ownsPuzzleDLC && !hasMods
-                        ? `
-                    <div class="puzzleContainer notOwned">
-                        <span class="badge">
-                            ${T.puzzleMenu.categories.new}
-                        </span>
-                        <img class="dlcLogo" src="${cachebust(
-                            G_CHINA_VERSION || G_WEGAME_VERSION
-                                ? "res/puzzle_dlc_logo_china.png"
-                                : "res/puzzle_dlc_logo.png"
-                        )}" alt="shapez.io Logo">
-                        <p>${T.mainMenu.puzzleDlcText}</p>
-                        <button class="styledButton puzzleDlcGetButton">${
-                            T.mainMenu.puzzleDlcViewNow
-                        }</button>
-                        <span class="hint">
-                            ${T.puzzleMenu.dlcHint}
-                        </span>
-                    </div>`
-                        : ""
-                }
-                ${
                     hasMods
                         ? `
-
                         <div class="modsOverview">
                             <div class="header">
                                 <h3>${T.mods.title}</h3>
                                 <button class="styledButton editMods"></button>
                             </div>
                             <div class="modsList">
-                            ${MODS.mods
-                                .map(mod => {
-                                    return `
-                                    <div class="mod">
-                                        <div class="name">${mod.metadata.name}</div>
-                                        <div class="author">by ${mod.metadata.author}</div>
-                                    </div>
-                                `;
-                                })
-                                .join("")}
+                                <div class="mod">
+                                    <div class="name">Mod support in progress</div>
+                                    <div class="author">Not implemented yet</div>
+                                </div>
                             </div>
 
                             <div class="dlcHint">
                                 ${T.mainMenu.mods.warningPuzzleDLC}
                             </div>
-
-
                         </div>
                         `
                         : ""
                 }
-
+                </div>
             </div>
 
-            ${
-                showWegameFooter
-                    ? `
-                <div class='footer wegameDisclaimer'>
-                        <div class="disclaimer">
-                            健康游戏忠告
-                            <br>
-                            抵制不良游戏,拒绝盗版游戏。注意自我保护,谨防受骗上当。<br>
-                            适度游戏益脑,沉迷游戏伤身。合理安排时间,享受健康生活。
-                        </div>
+            <div class="footer">
 
-                        <div class="rating"></div>
-                    </div>
-                    `
-                    : `
+                <div class="socialLinks">
+                    <a class="patreonLink boxLink" target="_blank">
+                        <span class="thirdpartyLogo patreonLogo"></span>
+                        <span class="label">Patreon</span>
+                    </a>
 
-                <div class="footer ${showExternalLinks ? "" : "noLinks"} ">
-                    ${
-                        showExternalLinks
-                            ? `
-                        <a class="githubLink boxLink" target="_blank">
-                            ${T.mainMenu.openSourceHint}
-                            <span class="thirdpartyLogo githubLogo"></span>
-                        </a>`
-                            : ""
-                    }
+                    <a class="githubLink boxLink" target="_blank">
+                        <span class="thirdpartyLogo githubLogo"></span>
+                        <span class="label">GitHub</span>
+                    </a>
 
-                    ${
-                        showDiscordLink
-                            ? `<a class="discordLink boxLink" target="_blank">
+                    <a class="discordLink boxLink" target="_blank">
+                        <span class="thirdpartyLogo discordLogo"></span>
+                        <span class="label">Discord</span>
+                    </a>
 
-                        ${T.mainMenu.discordLink}
-                        <span class="thirdpartyLogo  discordLogo"></span>
-                    </a>`
-                            : ""
-                    }
-
-                    <div class="sidelinks">
-                        ${showExternalLinks ? `<a class="redditLink">${T.mainMenu.subreddit}</a>` : ""}
-
-                        ${showExternalLinks ? `<a class="changelog">${T.changelog.title}</a>` : ""}
-
-                        ${showExternalLinks ? `<a class="helpTranslate">${T.mainMenu.helpTranslate}</a>` : ""}
-                    </div>
-                    <div class="author">${T.mainMenu.madeBy.replace(
-                        "<author-link>",
-                        '<a class="producerLink" target="_blank">tobspr Games</a>'
-                    )}</div>
+                    <a class="redditLink boxLink" target="_blank">
+                        <span class="thirdpartyLogo redditLogo"></span>
+                        <span class="label">Reddit</span>
+                    </a>
                 </div>
 
-                ${
-                    showCrosspromo
-                        ? `<iframe id="crosspromo" src="https://crosspromo.tobspr.io?src=shapez_web"></iframe>`
-                        : ""
-                }
-            `
-            }
+                <div class="footerGrow">
+                    <a class="changelog">${T.changelog.title}</a>
+                    <a class="helpTranslate">${T.mainMenu.helpTranslate}</a>
+                </div>
+
+                <div class="author">
+                    <a class="producerLink" href="https://tobspr.io" target="_blank" title="tobspr Games" rel="follow">
+                        <img src="res/logo-tobspr-games.svg" alt="tobspr Games"
+                        height="${25 * 0.8 * this.app.getEffectiveUiScale()}"
+                        width="${82 * 0.8 * this.app.getEffectiveUiScale()}"
+                        >
+                    </a>
+                </div>
+            </div>
         `;
     }
 
     /**
      * Asks the user to import a savegame
      */
-    requestImportSavegame() {
-        if (
-            this.app.savegameMgr.getSavegamesMetaData().length > 0 &&
-            !this.app.restrictionMgr.getHasUnlimitedSavegames()
-        ) {
-            this.app.analytics.trackUiClick("importgame_slot_limit_show");
-            this.showSavegameSlotLimit();
-            return;
-        }
+    async requestImportSavegame() {
+        const closeLoader = this.dialogs.showLoadingDialog();
+        await waitNextFrame();
 
-        // Create a 'fake' file-input to accept savegames
-        startFileChoose(".bin").then(file => {
-            if (file) {
-                const closeLoader = this.dialogs.showLoadingDialog();
-                waitNextFrame().then(() => {
-                    this.app.analytics.trackUiClick("import_savegame");
-                    const reader = new FileReader();
-                    reader.addEventListener("load", event => {
-                        const contents = event.target.result;
-                        let realContent;
-
-                        try {
-                            realContent = ReadWriteProxy.deserializeObject(contents);
-                        } catch (err) {
-                            closeLoader();
-                            this.dialogs.showWarning(
-                                T.dialogs.importSavegameError.title,
-                                T.dialogs.importSavegameError.text + "<br><br>" + err
-                            );
-                            return;
-                        }
-
-                        this.app.savegameMgr.importSavegame(realContent).then(
-                            () => {
-                                closeLoader();
-                                this.dialogs.showWarning(
-                                    T.dialogs.importSavegameSuccess.title,
-                                    T.dialogs.importSavegameSuccess.text
-                                );
-
-                                this.renderMainMenu();
-                                this.renderSavegames();
-                            },
-                            err => {
-                                closeLoader();
-                                this.dialogs.showWarning(
-                                    T.dialogs.importSavegameError.title,
-                                    T.dialogs.importSavegameError.text + ":<br><br>" + err
-                                );
-                            }
-                        );
-                    });
-                    reader.addEventListener("error", error => {
-                        this.dialogs.showWarning(
-                            T.dialogs.importSavegameError.title,
-                            T.dialogs.importSavegameError.text + ":<br><br>" + error
-                        );
-                    });
-                    reader.readAsText(file, "utf-8");
-                });
+        try {
+            const data = await this.app.storage.requestOpenFile("bin");
+            if (data === undefined) {
+                // User canceled the request
+                closeLoader();
+                return;
             }
-        });
+
+            await this.app.savegameMgr.importSavegame(data);
+            closeLoader();
+            this.dialogs.showWarning(
+                T.dialogs.importSavegameSuccess.title,
+                T.dialogs.importSavegameSuccess.text
+            );
+
+            this.renderMainMenu();
+            this.renderSavegames();
+        } catch (err) {
+            closeLoader();
+            this.dialogs.showWarning(
+                T.dialogs.importSavegameError.title,
+                T.dialogs.importSavegameError.text + ":<br><br>" + err
+            );
+        }
     }
 
     onBackButton() {
@@ -315,6 +167,10 @@ export class MainMenuState extends GameState {
     }
 
     onEnter(payload) {
+        // Start loading already
+        const app = this.app;
+        setTimeout(() => app.backgroundResourceLoader.getIngamePromise(), 10);
+
         this.dialogs = new HUDModalDialogs(null, this.app);
         const dialogsElement = document.body.querySelector(".modalDialogParent");
         this.dialogs.initializeToElement(dialogsElement);
@@ -353,22 +209,17 @@ export class MainMenuState extends GameState {
             ".settingsButton": this.onSettingsButtonClicked,
             ".languageChoose": this.onLanguageChooseClicked,
             ".redditLink": this.onRedditClicked,
+            ".patreonLink": this.onPatreonLinkClicked,
             ".changelog": this.onChangelogClicked,
             ".helpTranslate": this.onTranslationHelpLinkClicked,
             ".exitAppButton": this.onExitAppButtonClicked,
-            ".steamLink": this.onSteamLinkClicked,
             ".discordLink": () => {
-                this.app.analytics.trackUiClick("main_menu_link_discord");
                 this.app.platformWrapper.openExternalLink(THIRDPARTY_URLS.discord);
             },
             ".githubLink": () => {
-                this.app.analytics.trackUiClick("main_menu_link_github");
                 this.app.platformWrapper.openExternalLink(THIRDPARTY_URLS.github);
             },
-            ".producerLink": () => this.app.platformWrapper.openExternalLink("https://tobspr.io"),
             ".puzzleDlcPlayButton": this.onPuzzleModeButtonClicked,
-            ".puzzleDlcGetButton": this.onPuzzleWishlistButtonClicked,
-            ".wegameDisclaimer > .rating": this.onWegameRatingClicked,
             ".editMods": this.onModsClicked,
         };
 
@@ -416,6 +267,10 @@ export class MainMenuState extends GameState {
             );
         }
 
+        this.htmlElement
+            .querySelector(".mainContainer")
+            .setAttribute("data-savegames", String(this.savedGames.length));
+
         // Mods
         this.trackClicks(
             makeButton(outerDiv, ["modsButton", "styledButton"], T.mods.title),
@@ -427,7 +282,6 @@ export class MainMenuState extends GameState {
 
     onPuzzleModeButtonClicked(force = false) {
         const hasUnlockedBlueprints = this.app.savegameMgr.getSavegamesMetaData().some(s => s.level >= 12);
-        console.log(hasUnlockedBlueprints);
         if (!force && !hasUnlockedBlueprints) {
             const { ok } = this.dialogs.showWarning(
                 T.dialogs.puzzlePlayRegularRecommendation.title,
@@ -443,20 +297,9 @@ export class MainMenuState extends GameState {
         });
     }
 
-    onPuzzleWishlistButtonClicked() {
-        this.app.platformWrapper.openExternalLink(THIRDPARTY_URLS.puzzleDlcStorePage + "?utm_medium=mmsl2");
-    }
-
     onBackButtonClicked() {
         this.renderMainMenu();
         this.renderSavegames();
-    }
-
-    onSteamLinkClicked() {
-        this.app.analytics.trackUiClick("main_menu_steam_link_" + A_B_TESTING_LINK_TYPE);
-        this.app.platformWrapper.openExternalLink(THIRDPARTY_URLS.stanaloneCampaignLink + "/shapez_mainmenu");
-
-        return false;
     }
 
     onExitAppButtonClicked() {
@@ -468,12 +311,14 @@ export class MainMenuState extends GameState {
     }
 
     onRedditClicked() {
-        this.app.analytics.trackUiClick("main_menu_reddit_link");
         this.app.platformWrapper.openExternalLink(THIRDPARTY_URLS.reddit);
     }
 
+    onPatreonLinkClicked() {
+        this.app.platformWrapper.openExternalLink(THIRDPARTY_URLS.patreon);
+    }
+
     onLanguageChooseClicked() {
-        this.app.analytics.trackUiClick("choose_language");
         const setting = /** @type {EnumSetting} */ (this.app.settings.getSettingHandleById("language"));
 
         const { optionSelected } = this.dialogs.showOptionChooser(T.settings.labels.language.title, {
@@ -521,7 +366,9 @@ export class MainMenuState extends GameState {
         }
         const games = this.savedGames;
         if (games.length > 0) {
-            const parent = makeDiv(this.htmlElement.querySelector(".mainContainer"), null, ["savegames"]);
+            const parent = makeDiv(this.htmlElement.querySelector(".mainContainer .savegamesMount"), null, [
+                "savegames",
+            ]);
 
             for (let i = 0; i < games.length; ++i) {
                 const elem = makeDiv(parent, null, ["savegame"]);
@@ -551,27 +398,36 @@ export class MainMenuState extends GameState {
 
                 const deleteButton = document.createElement("button");
                 deleteButton.classList.add("styledButton", "deleteGame");
+                deleteButton.setAttribute("aria-label", "Delete");
                 elem.appendChild(deleteButton);
 
                 const downloadButton = document.createElement("button");
                 downloadButton.classList.add("styledButton", "downloadGame");
+                downloadButton.setAttribute("aria-label", "Download");
                 elem.appendChild(downloadButton);
 
-                if (!G_WEGAME_VERSION) {
-                    const renameButton = document.createElement("button");
-                    renameButton.classList.add("styledButton", "renameGame");
-                    name.appendChild(renameButton);
-                    this.trackClicks(renameButton, () => this.requestRenameSavegame(games[i]));
-                }
+                const renameButton = document.createElement("button");
+                renameButton.classList.add("styledButton", "renameGame");
+                renameButton.setAttribute("aria-label", "Rename Savegame");
+                name.appendChild(renameButton);
+                this.trackClicks(renameButton, () => this.requestRenameSavegame(games[i]));
 
                 const resumeButton = document.createElement("button");
                 resumeButton.classList.add("styledButton", "resumeGame");
+                resumeButton.setAttribute("aria-label", "Resumee");
                 elem.appendChild(resumeButton);
 
                 this.trackClicks(deleteButton, () => this.deleteGame(games[i]));
                 this.trackClicks(downloadButton, () => this.downloadGame(games[i]));
                 this.trackClicks(resumeButton, () => this.resumeGame(games[i]));
             }
+        } else {
+            const parent = makeDiv(
+                this.htmlElement.querySelector(".mainContainer .savegamesMount"),
+                null,
+                ["savegamesNone"],
+                T.mainMenu.noActiveSavegames
+            );
         }
     }
 
@@ -586,7 +442,7 @@ export class MainMenuState extends GameState {
             label: null,
             placeholder: "",
             defaultValue: game.name || "",
-            validator: val => val.match(regex) && trim(val).length > 0,
+            validator: val => val.match(regex) && val.trim().length > 0,
         });
         const dialog = new DialogWithForm({
             app: this.app,
@@ -595,11 +451,12 @@ export class MainMenuState extends GameState {
             formElements: [nameInput],
             buttons: ["cancel:bad:escape", "ok:good:enter"],
         });
+
         this.dialogs.internalShowDialog(dialog);
 
         // When confirmed, save the name
         dialog.buttonSignals.ok.add(() => {
-            game.name = trim(nameInput.getValue());
+            game.name = nameInput.getValue().trim();
             this.app.savegameMgr.writeAsync();
             this.renderSavegames();
         });
@@ -609,27 +466,22 @@ export class MainMenuState extends GameState {
      * @param {SavegameMetadata} game
      */
     resumeGame(game) {
-        this.app.analytics.trackUiClick("resume_game");
-
-        this.app.adProvider.showVideoAd().then(() => {
-            this.app.analytics.trackUiClick("resume_game_adcomplete");
-            const savegame = this.app.savegameMgr.getSavegameById(game.internalId);
-            savegame
-                .readAsync()
-                .then(() => this.checkForModDifferences(savegame))
-                .then(() => {
-                    this.moveToState("InGameState", {
-                        savegame,
-                    });
-                })
-
-                .catch(err => {
-                    this.dialogs.showWarning(
-                        T.dialogs.gameLoadFailure.title,
-                        T.dialogs.gameLoadFailure.text + "<br><br>" + err
-                    );
+        const savegame = this.app.savegameMgr.getSavegameById(game.internalId);
+        savegame
+            .readAsync()
+            .then(() => this.checkForModDifferences(savegame))
+            .then(() => {
+                this.moveToState("InGameState", {
+                    savegame,
                 });
-        });
+            })
+
+            .catch(err => {
+                this.dialogs.showWarning(
+                    T.dialogs.gameLoadFailure.title,
+                    T.dialogs.gameLoadFailure.text + "<br><br>" + err
+                );
+            });
     }
 
     /**
@@ -653,7 +505,7 @@ export class MainMenuState extends GameState {
                 <div class="dialogModsMod">
                     <div class="name">${mod.name}</div>
                     <div class="version">${T.mods.version} ${mod.version}</div>
-                    <button class="website styledButton" onclick="window.open('${mod.website.replace(
+                    <button class="website styledButton" onclick="window.open('${mod.website?.replace(
                         /"'/,
                         ""
                     )}')">${T.mods.modWebsite}
@@ -678,7 +530,7 @@ export class MainMenuState extends GameState {
             "continue:bad",
         ]);
 
-        return new Promise(resolve => {
+        return new /** @type {typeof Promise<void>} */ (Promise)(resolve => {
             signals.continue.add(resolve);
         });
     }
@@ -687,8 +539,6 @@ export class MainMenuState extends GameState {
      * @param {SavegameMetadata} game
      */
     deleteGame(game) {
-        this.app.analytics.trackUiClick("delete_game");
-
         const signals = this.dialogs.showWarning(
             T.dialogs.confirmSavegameDelete.title,
             T.dialogs.confirmSavegameDelete.text
@@ -717,30 +567,10 @@ export class MainMenuState extends GameState {
      * @param {SavegameMetadata} game
      */
     downloadGame(game) {
-        this.app.analytics.trackUiClick("download_game");
-
         const savegame = this.app.savegameMgr.getSavegameById(game.internalId);
         savegame.readAsync().then(() => {
-            const data = ReadWriteProxy.serializeObject(savegame.currentData);
             const filename = (game.name || "unnamed") + ".bin";
-            generateFileDownload(filename, data);
-        });
-    }
-
-    /**
-     * Shows a hint that the slot limit has been reached
-     */
-    showSavegameSlotLimit() {
-        const { getStandalone } = this.dialogs.showWarning(
-            T.dialogs.oneSavegameLimit.title,
-            T.dialogs.oneSavegameLimit.desc,
-            ["cancel:bad", "getStandalone:good"]
-        );
-        getStandalone.add(() => {
-            this.app.analytics.trackUiClick("visit_steampage_from_slot_limit");
-            this.app.platformWrapper.openExternalLink(
-                THIRDPARTY_URLS.stanaloneCampaignLink + "/shapez_slotlimit"
-            );
+            savegame.storage.requestSaveFile(filename, savegame.currentData);
         });
     }
 
@@ -749,43 +579,17 @@ export class MainMenuState extends GameState {
     }
 
     onTranslationHelpLinkClicked() {
-        this.app.analytics.trackUiClick("translation_help_link");
         this.app.platformWrapper.openExternalLink(
-            "https://github.com/tobspr/shapez.io/blob/master/translations"
+            "https://github.com/tobspr-games/shapez.io/blob/master/translations"
         );
     }
 
     onPlayButtonClicked() {
-        if (
-            this.app.savegameMgr.getSavegamesMetaData().length > 0 &&
-            !this.app.restrictionMgr.getHasUnlimitedSavegames()
-        ) {
-            this.app.analytics.trackUiClick("startgame_slot_limit_show");
-            this.showSavegameSlotLimit();
-            return;
-        }
+        const savegame = this.app.savegameMgr.createNewSavegame();
 
-        this.app.analytics.trackUiClick("startgame");
-        this.app.adProvider.showVideoAd().then(() => {
-            const savegame = this.app.savegameMgr.createNewSavegame();
-
-            this.moveToState("InGameState", {
-                savegame,
-            });
-            this.app.analytics.trackUiClick("startgame_adcomplete");
+        this.moveToState("InGameState", {
+            savegame,
         });
-    }
-
-    onWegameRatingClicked() {
-        this.dialogs.showInfo(
-            "提示说明：",
-            `
-            1）本游戏是一款休闲建造类单机游戏，画面简洁而乐趣充足。适用于年满8周岁及以上的用户，建议未成年人在家长监护下使用游戏产品。<br>
-            2）本游戏模拟简单的生产流水线，剧情简单且积极向上，没有基于真实历史和现实事件的改编内容。游戏玩法为摆放简单的部件，完成生产目标。游戏为单机作品，没有基于文字和语音的陌生人社交系统。<br>
-            3）本游戏中有用户实名认证系统，认证为未成年人的用户将接受以下管理：未满8周岁的用户不能付费；8周岁以上未满16周岁的未成年人用户，单次充值金额不得超过50元人民币，每月充值金额累计不得超过200元人民币；16周岁以上的未成年人用户，单次充值金额不得超过100元人民币，每月充值金额累计不得超过400元人民币。未成年玩家，仅可在周五、周六、周日和法定节假日每日20时至21时进行游戏。<br>
-            4）游戏功能说明：一款关于传送带自动化生产特定形状产品的工厂流水线模拟游戏，画面简洁而乐趣充足，可以让玩家在轻松愉快的氛围下获得各种游戏乐趣，体验完成目标的成就感。游戏没有失败功能，自动存档，不存在较强的挫折体验。
-        `
-        );
     }
 
     onModsClicked() {
@@ -805,9 +609,13 @@ export class MainMenuState extends GameState {
         });
 
         const savegame = this.app.savegameMgr.getSavegameById(latestInternalId);
+        if (!savegame) {
+            console.warn("No savegame to continue found:", this.app.savegameMgr.currentData.savegames);
+            return;
+        }
+
         savegame
             .readAsync()
-            .then(() => this.app.adProvider.showVideoAd())
             .then(() => this.checkForModDifferences(savegame))
             .then(() => {
                 this.moveToState("InGameState", {

@@ -1,30 +1,18 @@
-import { ReadWriteProxy } from "../core/read_write_proxy";
-import { ExplainedResult } from "../core/explained_result";
-import { SavegameSerializer } from "./savegame_serializer";
-import { BaseSavegameInterface } from "./savegame_interface";
-import { createLogger } from "../core/logging";
 import { globalConfig } from "../core/config";
-import { getSavegameInterface, savegameInterfaces } from "./savegame_interface_registry";
-import { SavegameInterface_V1001 } from "./schemas/1001";
-import { SavegameInterface_V1002 } from "./schemas/1002";
-import { SavegameInterface_V1003 } from "./schemas/1003";
-import { SavegameInterface_V1004 } from "./schemas/1004";
-import { SavegameInterface_V1005 } from "./schemas/1005";
-import { SavegameInterface_V1006 } from "./schemas/1006";
-import { SavegameInterface_V1007 } from "./schemas/1007";
-import { SavegameInterface_V1008 } from "./schemas/1008";
-import { SavegameInterface_V1009 } from "./schemas/1009";
+import { ExplainedResult } from "../core/explained_result";
+import { Logger } from "../core/logging";
+import { ReadWriteProxy } from "../core/read_write_proxy";
 import { MODS } from "../mods/modloader";
-import { SavegameInterface_V1010 } from "./schemas/1010";
+import { SavegameInterface } from "./savegame_interface";
+import { SavegameSerializer } from "./savegame_serializer";
 
-const logger = createLogger("savegame");
+const logger = new Logger("savegame");
 
 /**
  * @typedef {import("../application").Application} Application
  * @typedef {import("../game/root").GameRoot} GameRoot
  * @typedef {import("./savegame_typedefs").SavegameData} SavegameData
  * @typedef {import("./savegame_typedefs").SavegameMetadata} SavegameMetadata
- * @typedef {import("./savegame_typedefs").SavegameStats} SavegameStats
  * @typedef {import("./savegame_typedefs").SerializedGame} SerializedGame
  */
 
@@ -37,17 +25,16 @@ export class Savegame extends ReadWriteProxy {
      * @param {SavegameMetadata} param0.metaDataRef Handle to the meta data
      */
     constructor(app, { internalId, metaDataRef }) {
-        super(app, "savegame-" + internalId + ".bin");
+        super(app.storage, "savegame-" + internalId + ".bin");
+
+        /** @type {Application} */
+        this.app = app;
+
         this.internalId = internalId;
         this.metaDataRef = metaDataRef;
 
         /** @type {SavegameData} */
         this.currentData = this.getDefaultData();
-
-        assert(
-            savegameInterfaces[Savegame.getCurrentVersion()],
-            "Savegame interface not defined: " + Savegame.getCurrentVersion()
-        );
     }
 
     //////// RW Proxy Impl //////////
@@ -57,13 +44,6 @@ export class Savegame extends ReadWriteProxy {
      */
     static getCurrentVersion() {
         return 1010;
-    }
-
-    /**
-     * @returns {typeof BaseSavegameInterface}
-     */
-    static getReaderClass() {
-        return savegameInterfaces[Savegame.getCurrentVersion()];
     }
 
     /**
@@ -99,11 +79,6 @@ export class Savegame extends ReadWriteProxy {
         return {
             version: this.getCurrentVersion(),
             dump: null,
-            stats: {
-                failedMam: false,
-                trashedCount: 0,
-                usedInverseRotater: false,
-            },
             lastUpdate: Date.now(),
             mods: MODS.getModsListForSavegame(),
         };
@@ -114,58 +89,8 @@ export class Savegame extends ReadWriteProxy {
      * @param {SavegameData} data
      */
     migrate(data) {
-        if (data.version < 1000) {
-            return ExplainedResult.bad("Can not migrate savegame, too old");
-        }
-
-        if (data.version === 1000) {
-            SavegameInterface_V1001.migrate1000to1001(data);
-            data.version = 1001;
-        }
-
-        if (data.version === 1001) {
-            SavegameInterface_V1002.migrate1001to1002(data);
-            data.version = 1002;
-        }
-
-        if (data.version === 1002) {
-            SavegameInterface_V1003.migrate1002to1003(data);
-            data.version = 1003;
-        }
-
-        if (data.version === 1003) {
-            SavegameInterface_V1004.migrate1003to1004(data);
-            data.version = 1004;
-        }
-
-        if (data.version === 1004) {
-            SavegameInterface_V1005.migrate1004to1005(data);
-            data.version = 1005;
-        }
-
-        if (data.version === 1005) {
-            SavegameInterface_V1006.migrate1005to1006(data);
-            data.version = 1006;
-        }
-
-        if (data.version === 1006) {
-            SavegameInterface_V1007.migrate1006to1007(data);
-            data.version = 1007;
-        }
-
-        if (data.version === 1007) {
-            SavegameInterface_V1008.migrate1007to1008(data);
-            data.version = 1008;
-        }
-
-        if (data.version === 1008) {
-            SavegameInterface_V1009.migrate1008to1009(data);
-            data.version = 1009;
-        }
-
-        if (data.version === 1009) {
-            SavegameInterface_V1010.migrate1009to1010(data);
-            data.version = 1010;
+        if (data.version !== this.getCurrentVersion()) {
+            return ExplainedResult.bad("Savegame upgrade is not supported");
         }
 
         return ExplainedResult.good();
@@ -196,13 +121,6 @@ export class Savegame extends ReadWriteProxy {
     isSaveable() {
         return true;
     }
-    /**
-     * Returns the statistics of the savegame
-     * @returns {SavegameStats}
-     */
-    getStatistics() {
-        return this.currentData.stats;
-    }
 
     /**
      * Returns the *real* last update of the savegame, not the one of the metadata
@@ -229,24 +147,23 @@ export class Savegame extends ReadWriteProxy {
 
     /**
      * Returns a reader to access the data
-     * @returns {BaseSavegameInterface}
+     * @returns {SavegameInterface}
      */
     getDumpReader() {
         if (!this.currentData.dump) {
             logger.warn("Getting reader on null-savegame dump");
         }
 
-        const cls = /** @type {typeof Savegame} */ (this.constructor).getReaderClass();
-        return new cls(this.currentData);
+        return new SavegameInterface(this.currentData);
     }
 
     /**
      * Returns a reader to access external data
-     * @returns {BaseSavegameInterface}
+     * @returns {SavegameInterface}
      */
     getDumpReaderForExternalData(data) {
         assert(data.version, "External data contains no version");
-        return getSavegameInterface(data);
+        return new SavegameInterface(data);
     }
 
     ///////// Public Interface ///////////
@@ -273,7 +190,7 @@ export class Savegame extends ReadWriteProxy {
             return false;
         }
 
-        const shadowData = Object.assign({}, this.currentData);
+        const shadowData = {};
         shadowData.dump = dump;
         shadowData.lastUpdate = new Date().getTime();
         shadowData.version = this.getCurrentVersion();

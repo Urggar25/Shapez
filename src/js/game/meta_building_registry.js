@@ -1,6 +1,7 @@
 import { gMetaBuildingRegistry } from "../core/global_registries";
-import { createLogger } from "../core/logging";
+import { Logger } from "../core/logging";
 import { T } from "../translations";
+import { buildBuildingCodeCache, gBuildingVariants, registerBuildingVariant } from "./building_codes";
 import { MetaAnalyzerBuilding } from "./buildings/analyzer";
 import { MetaBalancerBuilding } from "./buildings/balancer";
 import { MetaBeltBuilding } from "./buildings/belt";
@@ -20,7 +21,7 @@ import { MetaMinerBuilding } from "./buildings/miner";
 import { MetaMixerBuilding } from "./buildings/mixer";
 import { MetaPainterBuilding } from "./buildings/painter";
 import { MetaReaderBuilding } from "./buildings/reader";
-import { MetaRotaterBuilding } from "./buildings/rotater";
+import { MetaRotatorBuilding } from "./buildings/rotator";
 import { MetaStackerBuilding } from "./buildings/stacker";
 import { MetaStorageBuilding } from "./buildings/storage";
 import { MetaTransistorBuilding } from "./buildings/transistor";
@@ -29,11 +30,10 @@ import { MetaUndergroundBeltBuilding } from "./buildings/underground_belt";
 import { MetaVirtualProcessorBuilding } from "./buildings/virtual_processor";
 import { MetaWireBuilding } from "./buildings/wire";
 import { MetaWireTunnelBuilding } from "./buildings/wire_tunnel";
-import { buildBuildingCodeCache, gBuildingVariants, registerBuildingVariant } from "./building_codes";
 import { KEYMAPPINGS } from "./key_action_mapper";
 import { defaultBuildingVariant, MetaBuilding } from "./meta_building";
 
-const logger = createLogger("building_registry");
+const logger = new Logger("building_registry");
 
 /**
  *
@@ -57,7 +57,7 @@ export function initMetaBuildingRegistry() {
         MetaBalancerBuilding,
         MetaMinerBuilding,
         MetaCutterBuilding,
-        MetaRotaterBuilding,
+        MetaRotatorBuilding,
         MetaStackerBuilding,
         MetaMixerBuilding,
         MetaPainterBuilding,
@@ -113,7 +113,7 @@ export function initMetaBuildingRegistry() {
 /**
  * Once all sprites are loaded, propagates the cache
  */
-export function initBuildingCodesAfterResourcesLoaded() {
+export function initSpriteCache() {
     logger.log("Propagating sprite cache");
     for (const key in gBuildingVariants) {
         const variant = gBuildingVariants[key];

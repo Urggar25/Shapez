@@ -2,15 +2,15 @@
 import { Application } from "../application";
 /* typehints:end */
 
-import { ReadWriteProxy } from "../core/read_write_proxy";
-import { BoolSetting, EnumSetting, RangeSetting, BaseSetting } from "./setting_types";
-import { createLogger } from "../core/logging";
 import { ExplainedResult } from "../core/explained_result";
+import { Logger } from "../core/logging";
+import { ReadWriteProxy } from "../core/read_write_proxy";
 import { THEMES, applyGameTheme } from "../game/theme";
-import { T } from "../translations";
 import { LANGUAGES } from "../languages";
+import { T } from "../translations";
+import { BaseSetting, BoolSetting, EnumSetting, RangeSetting } from "./setting_types";
 
-const logger = createLogger("application_settings");
+const logger = new Logger("application_settings");
 
 /**
  * @enum {string}
@@ -189,7 +189,7 @@ function initializeSettings() {
             },
             /**
              * @param {Application} app
-             */ app => app.restrictionMgr.getHasExtendedSettings()
+             */ app => true
         ),
 
         new BoolSetting(
@@ -217,9 +217,6 @@ function initializeSettings() {
                     applyGameTheme(id);
                     document.documentElement.setAttribute("data-theme", id);
                 },
-            enabledCb: /**
-             * @param {Application} app
-             */ app => app.restrictionMgr.getHasExtendedSettings(),
         }),
 
         new EnumSetting("autosaveInterval", {
@@ -278,14 +275,12 @@ function initializeSettings() {
             category: enumCategories.performance,
             restartRequired: false,
             changeCb: (app, id) => {},
-            enabledCb: /**
-             * @param {Application} app
-             */ app => app.restrictionMgr.getHasExtendedSettings(),
         }),
 
         new BoolSetting("lowQualityMapResources", enumCategories.performance, (app, value) => {}),
         new BoolSetting("disableTileGrid", enumCategories.performance, (app, value) => {}),
         new BoolSetting("lowQualityTextures", enumCategories.performance, (app, value) => {}),
+
         new BoolSetting("simplifiedBelts", enumCategories.performance, (app, value) => {}),
     ];
 }
@@ -293,7 +288,7 @@ function initializeSettings() {
 class SettingsStorage {
     constructor() {
         this.uiScale = "regular";
-        this.fullscreen = G_IS_STANDALONE;
+        this.fullscreen = true;
 
         this.soundVolume = 1.0;
         this.musicVolume = 1.0;
@@ -335,8 +330,11 @@ class SettingsStorage {
 }
 
 export class ApplicationSettings extends ReadWriteProxy {
-    constructor(app) {
-        super(app, "app_settings.bin");
+    constructor(app, storage) {
+        super(storage, "app_settings.bin");
+
+        /** @type {Application} */
+        this.app = app;
 
         this.settingHandles = initializeSettings();
     }
@@ -377,7 +375,7 @@ export class ApplicationSettings extends ReadWriteProxy {
      * @param {string} key
      */
     getSetting(key) {
-        assert(this.getAllSettings().hasOwnProperty(key), "Setting not known: " + key);
+        assert(Object.hasOwn(this.getAllSettings(), key), "Setting not known: " + key);
         return this.getAllSettings()[key];
     }
 
@@ -511,13 +509,13 @@ export class ApplicationSettings extends ReadWriteProxy {
             return ExplainedResult.bad("Bad settings object");
         }
 
-        const settings = data.settings;
-
         // MODS
-        if (!THEMES[settings.theme]) {
-            console.warn("Resetting theme because its no longer available: " + settings.theme);
-            settings.theme = "light";
+        if (!THEMES[data.settings.theme]) {
+            console.log("Resetting theme because its no longer available: " + data.settings.theme);
+            data.settings.theme = "light";
         }
+
+        const settings = data.settings;
 
         for (let i = 0; i < this.settingHandles.length; ++i) {
             const setting = this.settingHandles[i];
@@ -547,7 +545,7 @@ export class ApplicationSettings extends ReadWriteProxy {
     }
 
     getCurrentVersion() {
-        return 31;
+        return 32;
     }
 
     /** @param {{settings: SettingsStorage, version: number}} data */
@@ -699,9 +697,13 @@ export class ApplicationSettings extends ReadWriteProxy {
             data.version = 31;
         }
 
+        if (data.version < 32) {
+            data.version = 32;
+        }
+
         // MODS
         if (!THEMES[data.settings.theme]) {
-            console.warn("Resetting theme because its no longer available: " + data.settings.theme);
+            console.log("Resetting theme because its no longer available: " + data.settings.theme);
             data.settings.theme = "light";
         }
 

@@ -1,24 +1,22 @@
 import { globalConfig } from "../../../core/config";
 import { DrawParameters } from "../../../core/draw_parameters";
-import { gMetaBuildingRegistry } from "../../../core/global_registries";
-import { createLogger } from "../../../core/logging";
+import { Logger } from "../../../core/logging";
 import { STOP_PROPAGATION } from "../../../core/signal";
 import { formatBigNumberFull } from "../../../core/utils";
 import { Vector } from "../../../core/vector";
-import { ACHIEVEMENTS } from "../../../platform/achievement_provider";
 import { T } from "../../../translations";
-import { Blueprint } from "../../blueprint";
-import { MetaBlockBuilding } from "../../buildings/block";
-import { MetaConstantProducerBuilding } from "../../buildings/constant_producer";
 import { enumMouseButton } from "../../camera";
-import { Component } from "../../component";
 import { Entity } from "../../entity";
 import { KEYMAPPINGS } from "../../key_action_mapper";
 import { THEME } from "../../theme";
 import { enumHubGoalRewards } from "../../tutorial_goals";
 import { BaseHUDPart } from "../base_hud_part";
 
-const logger = createLogger("hud/mass_selector");
+/* typehints:start */
+// @ts-ignore
+/* typehints:end */
+
+const logger = new Logger("hud/mass_selector");
 
 export class HUDMassSelector extends BaseHUDPart {
     createElements(parent) {}
@@ -120,24 +118,29 @@ export class HUDMassSelector extends BaseHUDPart {
                     count++;
                 }
             }
-
-            this.root.signals.achievementCheck.dispatch(ACHIEVEMENTS.destroy1000, count);
         });
 
         // Clear uids later
         this.selectedUids = new Set();
     }
 
+    showBlueprintsNotUnlocked() {
+        this.root.hud.parts.dialogs.showInfo(
+            T.dialogs.blueprintsNotUnlocked.title,
+            T.dialogs.blueprintsNotUnlocked.desc
+        );
+    }
+
     startCopy() {
         if (this.selectedUids.size > 0) {
             if (!this.root.hubGoals.isRewardUnlocked(enumHubGoalRewards.reward_blueprints)) {
-                this.root.hud.parts.dialogs.showInfo(
-                    T.dialogs.blueprintsNotUnlocked.title,
-                    T.dialogs.blueprintsNotUnlocked.desc
-                );
+                this.showBlueprintsNotUnlocked();
                 return;
             }
-            this.root.hud.signals.buildingsSelectedForCopy.dispatch(Array.from(this.selectedUids));
+            this.root.hud.signals.buildingsSelectedForBlueprint.dispatch(
+                Array.from(this.selectedUids),
+                false
+            );
             this.selectedUids = new Set();
             this.root.soundProxy.playUiClick();
         } else {
@@ -157,10 +160,7 @@ export class HUDMassSelector extends BaseHUDPart {
 
     confirmCut() {
         if (!this.root.hubGoals.isRewardUnlocked(enumHubGoalRewards.reward_blueprints)) {
-            this.root.hud.parts.dialogs.showInfo(
-                T.dialogs.blueprintsNotUnlocked.title,
-                T.dialogs.blueprintsNotUnlocked.desc
-            );
+            this.showBlueprintsNotUnlocked();
         } else if (
             !this.root.app.settings.getAllSettings().disableCutDeleteWarnings &&
             this.selectedUids.size > 100
@@ -183,30 +183,16 @@ export class HUDMassSelector extends BaseHUDPart {
         if (this.selectedUids.size > 0) {
             const entityUids = Array.from(this.selectedUids);
 
-            const cutAction = () => {
-                // copy code relies on entities still existing, so must copy before deleting.
-                this.root.hud.signals.buildingsSelectedForCopy.dispatch(entityUids);
+            // copy code relies on entities still existing, so must copy before deleting.
+            this.root.hud.signals.buildingsSelectedForBlueprint.dispatch(entityUids, true);
 
-                for (let i = 0; i < entityUids.length; ++i) {
-                    const uid = entityUids[i];
-                    const entity = this.root.entityMgr.findByUid(uid);
-                    if (!this.root.logic.tryDeleteBuilding(entity)) {
-                        logger.error("Error in mass cut, could not remove building");
-                        this.selectedUids.delete(uid);
-                    }
+            for (let i = 0; i < entityUids.length; ++i) {
+                const uid = entityUids[i];
+                const entity = this.root.entityMgr.findByUid(uid);
+                if (!this.root.logic.tryDeleteBuilding(entity)) {
+                    logger.error("Error in mass cut, could not remove building");
+                    this.selectedUids.delete(uid);
                 }
-            };
-
-            const blueprint = Blueprint.fromUids(this.root, entityUids);
-            if (blueprint.canAfford(this.root)) {
-                cutAction();
-            } else {
-                const { cancel, ok } = this.root.hud.parts.dialogs.showWarning(
-                    T.dialogs.massCutInsufficientConfirm.title,
-                    T.dialogs.massCutInsufficientConfirm.desc,
-                    ["cancel:good:escape", "ok:bad:enter"]
-                );
-                ok.add(cutAction);
             }
 
             this.root.soundProxy.playUiClick();

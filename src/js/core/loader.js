@@ -1,14 +1,13 @@
 import { makeOffscreenBuffer } from "./buffer_utils";
 import { AtlasSprite, BaseSprite, RegularSprite, SpriteAtlasLink } from "./sprites";
-import { cachebust } from "./cachebust";
-import { createLogger } from "./logging";
+import { Logger } from "./logging";
 
 /**
  * @typedef {import("../application").Application} Application
  * @typedef {import("./atlas_definitions").AtlasDefinition} AtlasDefinition;
  */
 
-const logger = createLogger("loader");
+const logger = new Logger("loader");
 
 const missingSpriteIds = {};
 
@@ -76,61 +75,34 @@ class LoaderImpl {
     /**
      *
      * @param {string} key
+     * @param {(progress: number) => void} progressHandler
      * @returns {Promise<HTMLImageElement|null>}
      */
-    internalPreloadImage(key) {
-        const url = cachebust("res/" + key);
-        const image = new Image();
-
-        let triesSoFar = 0;
-
-        return Promise.race([
-            new Promise((resolve, reject) => {
-                setTimeout(reject, G_IS_DEV ? 500 : 10000);
-            }),
-
-            new Promise(resolve => {
-                image.onload = () => {
-                    image.onerror = null;
-                    image.onload = null;
-
-                    if (typeof image.decode === "function") {
-                        // SAFARI: Image.decode() fails on safari with svgs -> we dont want to fail
-                        // on that
-                        // FIREFOX: Decode never returns if the image is in cache, so call it in background
-                        image.decode().then(
-                            () => null,
-                            () => null
-                        );
-                    }
-                    resolve(image);
-                };
-
-                image.onerror = reason => {
-                    logger.warn("Failed to load '" + url + "':", reason);
-                    if (++triesSoFar < 4) {
-                        logger.log("Retrying to load image from", url);
-                        image.src = url + "?try=" + triesSoFar;
-                    } else {
-                        logger.warn("Failed to load", url, "after", triesSoFar, "tries with reason", reason);
-                        image.onerror = null;
-                        image.onload = null;
-                        resolve(null);
-                    }
-                };
-
-                image.src = url;
-            }),
-        ]);
+    internalPreloadImage(key, progressHandler) {
+        return this.app.backgroundResourceLoader
+            .preloadWithProgress("res/" + key, progress => {
+                progressHandler(progress);
+            })
+            .then(url => {
+                return new Promise((resolve, reject) => {
+                    const image = new Image();
+                    image.addEventListener("load", () => resolve(image));
+                    image.addEventListener("error", err =>
+                        reject("Failed to load sprite " + key + ": " + err)
+                    );
+                    image.src = url;
+                });
+            });
     }
 
     /**
      * Preloads a sprite
      * @param {string} key
+     * @param {(progress: number) => void} progressHandler
      * @returns {Promise<void>}
      */
-    preloadCSSSprite(key) {
-        return this.internalPreloadImage(key).then(image => {
+    preloadCSSSprite(key, progressHandler) {
+        return this.internalPreloadImage(key, progressHandler).then(image => {
             if (key.indexOf("game_misc") >= 0) {
                 // Allow access to regular sprites
                 this.sprites.set(key, new RegularSprite(image, image.width, image.height));
@@ -142,10 +114,11 @@ class LoaderImpl {
     /**
      * Preloads an atlas
      * @param {AtlasDefinition} atlas
+     * @param {(progress: number) => void} progressHandler
      * @returns {Promise<void>}
      */
-    preloadAtlas(atlas) {
-        return this.internalPreloadImage(atlas.getFullSourcePath()).then(image => {
+    preloadAtlas(atlas, progressHandler) {
+        return this.internalPreloadImage(atlas.getFullSourcePath(), progressHandler).then(image => {
             // @ts-ignore
             image.label = atlas.sourceFileName;
             return this.internalParseAtlas(atlas, image);

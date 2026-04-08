@@ -1,5 +1,5 @@
 import { globalConfig, THIRDPARTY_URLS } from "../../../core/config";
-import { createLogger } from "../../../core/logging";
+import { Logger } from "../../../core/logging";
 import { DialogWithForm } from "../../../core/modal_dialog_elements";
 import { FormElementInput, FormElementItemChooser } from "../../../core/modal_dialog_forms";
 import { STOP_PROPAGATION } from "../../../core/signal";
@@ -13,8 +13,7 @@ import { ShapeItem } from "../../items/shape_item";
 import { ShapeDefinition } from "../../shape_definition";
 import { BaseHUDPart } from "../base_hud_part";
 
-const trim = require("trim");
-const logger = createLogger("puzzle-review");
+const logger = new Logger("puzzle-review");
 
 export class HUDPuzzleEditorReview extends BaseHUDPart {
     constructor(root) {
@@ -106,7 +105,7 @@ export class HUDPuzzleEditorReview extends BaseHUDPart {
             label: T.dialogs.submitPuzzle.descName,
             placeholder: T.dialogs.submitPuzzle.placeholderName,
             defaultValue: title,
-            validator: val => trim(val).match(regex) && trim(val).length > 0,
+            validator: val => val.trim().match(regex) && val.trim().length > 0,
         });
 
         let items = new Set();
@@ -135,7 +134,7 @@ export class HUDPuzzleEditorReview extends BaseHUDPart {
             label: null,
             placeholder: "CuCuCuCu",
             defaultValue: shortKey,
-            validator: val => ShapeDefinition.isValidShortKey(trim(val)),
+            validator: val => ShapeDefinition.isValidShortKey(val.trim()),
         });
 
         const dialog = new DialogWithForm({
@@ -147,14 +146,14 @@ export class HUDPuzzleEditorReview extends BaseHUDPart {
         });
 
         itemInput.valueChosen.add(value => {
-            shapeKeyInput.setValue(value.definition.getHash());
+            shapeKeyInput.setValue(/** @type {ShapeItem} */ (value).definition.getHash());
         });
 
         this.root.hud.parts.dialogs.internalShowDialog(dialog);
 
         dialog.buttonSignals.ok.add(() => {
-            const title = trim(nameInput.getValue());
-            const shortKey = trim(shapeKeyInput.getValue());
+            const title = nameInput.getValue().trim();
+            const shortKey = shapeKeyInput.getValue().trim();
             this.doSubmitPuzzle(title, shortKey);
         });
     }

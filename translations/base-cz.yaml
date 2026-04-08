@@ -1,23 +1,3 @@
-steamPage:
-    shortText: shapez.io je hra o stavbě továren na automatizaci výroby a
-        kombinování čím dál složitějších tvarů na nekonečné mapě.
-    discordLinkShort: Oficiální Discord
-    intro: >-
-        Máte rádi automatizaci? Tak to jste na správném místě!
-
-        shapez.io je relaxační hra, ve které musíte stavět továrny na automatizaci výroby geometrických tvarů. Jak se zvyšuje úroveň, tvary se stávají stále složitějšími a vy se musíte rozšířit po nekonečné mapě.
-
-        A jako by to nestačilo, musíte také produkovat exponenciálně více, abyste uspokojili požadavky - jediná věc, která pomáhá, je škálování! Zatímco na začátku tvary pouze zpracováváte, později je musíte obarvit - těžbou a mícháním barev!
-
-        Koupením hry na platformě Steam získáte přístup k plné verzi hry, ale také můžete nejdříve hrát demo verzi na shapez.io a až potom se rozhodnout!
-    what_others_say: Co o shapez.io říkají lidé
-    nothernlion_comment: Tato hra je úžasná - Užívám si čas strávený hraním této
-        hry, jen strašně rychle utekl.
-    notch_comment: Sakra. Opravdu bych měl jít spát, ale myslím si, že jsem zrovna
-        přišel na to, jak v shapez.io vytvořit počítač.
-    steam_review_comment: Tato hra mi ukradla život a já ho nechci zpět. Odpočinková
-        factory hra, která mi nedovolí přestat dělat mé výrobní linky více
-        efektivní.
 global:
     loading: Načítání
     error: Chyba
@@ -50,36 +30,20 @@ global:
         shift: SHIFT
         space: SPACE
     loggingIn: Přihlašuji
-demoBanners:
-    title: Demo verze
-    intro: Získejte plnou verzi pro odemknutí všech funkcí a obsahu!
+    loadingResources: Stahování dalších zdrojů (<percentage> %)
 mainMenu:
     play: Hrát
     continue: Pokračovat
     newGame: Nová hra
-    changelog: Seznam změn
-    subreddit: Reddit
     importSavegame: Importovat
-    openSourceHint: Tato hra je open source!
-    discordLink: Oficiální Discord Server
     helpTranslate: Pomozte přeložit hru!
-    madeBy: Vytvořil <author-link>
-    browserWarning: Promiňte, ale víme, že hra poběží pomalu ve vašem prohlížeči!
-        Pořiďte si samostatnou verzi nebo si stáhněte Google Chrome pro
-        plnohodnotný zážitek.
     savegameLevel: Úroveň <x>
     savegameLevelUnknown: Neznámá úroveň
     savegameUnnamed: Nepojmenovaný
-    puzzleMode: Puzzle mód
-    back: Zpět
-    puzzleDlcText: Baví vás zmenšování a optimalizace továren? Pořiďte si nyní
-        Puzzle DLC na Steamu pro ještě více zábavy!
-    puzzleDlcWishlist: Přidejte si nyní na seznam přání!
-    puzzleDlcViewNow: Zobrazit DLC
     mods:
-        title: Aktivní módy
-        warningPuzzleDLC: Nelze hrát Puzzle DLC společně s módy. Prosím
-            deaktivujte všechny módy, abyste mohli hrát DLC.
+        warningPuzzleDLC: Nelze hrát Puzzle DLC společně s módy. Prosím deaktivujte
+            všechny módy, abyste mohli hrát DLC.
+    noActiveSavegames: No active savegames found - Click play to start a new game!
 dialogs:
     buttons:
         ok: OK
@@ -88,7 +52,6 @@ dialogs:
         later: Později
         restart: Restart
         reset: Reset
-        getStandalone: Získejte plnou verzi
         deleteGame: Vím, co dělám
         viewUpdate: Zobrazit aktualizaci
         showUpgrades: Zobrazit vylepšení
@@ -127,14 +90,6 @@ dialogs:
     keybindingsResetOk:
         title: Reset klávesových zkratek
         desc: Všechny klávesové zkratky byly vráceny do původního nastavení!
-    featureRestriction:
-        title: Demo verze
-        desc: Zkoušíte použít funkci (<feature>), která není v demo verzi. Zvažte
-            pořízení plné verze pro kompletní zážitek!
-    oneSavegameLimit:
-        title: Omezené ukládání
-        desc: Ve demo verzi můžete mít pouze jednu uloženou hru. Odstraňte stávající
-            uloženou hru nebo si pořiďte plnou verzi!
     updateSummary:
         title: Nová aktualizace!
         desc: "Zde jsou změny od doby, kdy jste naposledy hráli:"
@@ -174,9 +129,6 @@ dialogs:
         descItems: "Vyberte předdefinovanou položku:"
         descShortKey: ... nebo zadejte <strong>krátký klíč</strong> tvaru (Ten můžete
             vygenerovat <link>zde</link>)
-    markerDemoLimit:
-        desc: V demo verzi můžete vytvořit pouze dvě značky. Pořiďte si plnou verzi pro
-            neomezený počet značek!
     exportScreenshotWarning:
         title: Exportuj snímek obrazovky
         desc: Chcete exportovat svou základnu jako snímek obrazovky. Mějte prosím na
@@ -259,10 +211,15 @@ dialogs:
     modsDifference:
         title: Varování o módech
         desc: Aktuálně nainstalované módy se liší od módů, se kterými byla uložená hra
-            vytvořena. To může způsobit, že se uložená hra rozbije nebo se vůbec nenačte.
-            Jste si jisti, že chcete pokračovat?
+            vytvořena. To může způsobit, že se uložená hra rozbije nebo se vůbec
+            nenačte. Jste si jisti, že chcete pokračovat?
         missingMods: Chybějící módy
         newMods: Nově nainstalované módy
+    resourceLoadFailed:
+        title: Resources failed to load
+        descSteamDemo: "One ore more resources could not be loaded. Try restarting the
+            game - If that does not help, try reinstalling and verifying the
+            game files via Steam. <br><br> Error Message:"
 ingame:
     keybindingsOverlay:
         moveMap: Posun mapy
@@ -384,6 +341,7 @@ ingame:
             21_4_press_button: "Stiskněte přepínač pro změnu <strong>vysílaného logického
                 signálu</strong> a tím aktivujte barvič.<br><br> PS: Nemusíte
                 připojit veškeré vstupy! Zkuste spojit pouze dva."
+            1_2_hold_and_drag: Podržení a přetažení
     colors:
         red: Červená
         green: Zelená
@@ -402,38 +360,6 @@ ingame:
         one_miner: 1 Extraktor
         n_miners: <amount> Extraktorů
         limited_items: Limit je <max_throughput>
-    watermark:
-        title: Demo verze
-        desc: Kliknutím sem zobrazíte výhody Steam verze!
-        get_on_steam: Získejte na steamu
-    standaloneAdvantages:
-        title: Získejte plnou verzi!
-        no_thanks: Ne, děkuji!
-        points:
-            levels:
-                title: 12 Nových úrovní
-                desc: Celkem 26 úrovní!
-            buildings:
-                title: 18 Nových budov
-                desc: Plně automatizujte svou továrnu!
-            upgrades:
-                title: ∞ vylepšení
-                desc: Tato demo verze má pouze 5!
-            markers:
-                title: ∞ Značek
-                desc: Nikdy se neztraťte ve své továrně!
-            wires:
-                title: Kabely
-                desc: Zcela nový rozměr!
-            darkmode:
-                title: Tmavý mód
-                desc: Přestanou vás bolet oči!
-            support:
-                title: Podpořte mě
-                desc: Vyvíjím to ve svém volném čase!
-            achievements:
-                title: Achievements
-                desc: Získejte je všechny!
     puzzleEditorSettings:
         zoneTitle: Zóna
         zoneWidth: Šířka
@@ -525,7 +451,7 @@ buildings:
             description: Rozebere tvar na čtyři části. <strong>Pokud použijete jen některé
                 části, nezapomeňte ostatní smazat, jinak se vám produkce
                 zasekne!</strong>
-    rotater:
+    rotator:
         default:
             name: Rotor
             description: Otáčí tvary o 90 stupňů po směru hodinových ručiček.
@@ -654,7 +580,7 @@ buildings:
         default:
             name: Virtuální pila
             description: Virtuálně rozřízne tvar svisle na dvě části.
-        rotater:
+        rotator:
             name: Virtuální rotor
             description: Virtuálně otáčí tvary o 90 stupňů po směru hodinových ručiček.
         unstacker:
@@ -693,7 +619,7 @@ storyRewards:
             orientaci</strong>!<br><br>Nezapomeňte se zbavit zbytku tvarů, jinak
             se <strong>vám produkce zasekne</strong> - za tímto účelem jsem vám
             dal <strong>koš</strong>, který smaže vše, co do něj vložíte!
-    reward_rotater:
+    reward_rotator:
         title: Otáčení
         desc: <strong>Rotor</strong> byl právě odemčen! Otáčí tvary po směru hodinových
             ručiček o 90 stupňů.
@@ -721,7 +647,7 @@ storyRewards:
         title: Tunel
         desc: <strong>Tunel</strong> byl právě odemčen - Umožňuje vézt suroviny pod
             budovami a pásy.
-    reward_rotater_ccw:
+    reward_rotator_ccw:
         title: Otáčení II
         desc: Odemkli jste variantu <strong>rotoru</strong> - Umožňuje vám otáčet proti
             směru hodinových ručiček. Vyberte rotor a <strong>zmáčkněte 'T' pro
@@ -791,7 +717,7 @@ storyRewards:
         desc: Právě jste odemkli <strong>čtečku pásů</strong>! Umožňuje vám změřit
             propustnost pásu.<br><br>A počkejte na odemčení kabelů - později to
             bude velmi užitečné!
-    reward_rotater_180:
+    reward_rotator_180:
         title: Rotor (180°)
         desc: Právě jste odemkli 180 stupňoví <strong>rotor</strong>! - Umožňuje vám
             otáčet tvar o 180 stupňů!
@@ -1008,8 +934,8 @@ settings:
             description: Určuje velikost ikon tvarů na náhledu mapy (při oddálení).
         shapeTooltipAlwaysOn:
             title: Popisek tvaru – Zobrazit vždy
-            description: Určuje, zda se má vždy zobrazovat nápověda tvaru při najetí na budovy,
-                místo toho, abyste museli držet „ALT“.
+            description: Určuje, zda se má vždy zobrazovat nápověda tvaru při najetí na
+                budovy, místo toho, abyste museli držet „ALT“.
     rangeSliderPercentage: <amount> %
     tickrateHz: <amount> Hz
     newBadge: Nové!
@@ -1047,7 +973,7 @@ keybindings:
         underground_belt: Tunel
         miner: Extraktor
         cutter: Pila
-        rotater: Rotor
+        rotator: Rotor
         stacker: Kombinátor
         mixer: Mixér na barvy
         painter: Barvič
@@ -1113,12 +1039,6 @@ about:
 changelog:
     title: Seznam změn
 demo:
-    features:
-        restoringGames: Nahrávání uložených her
-        importingGames: Importování uložených her
-        oneGameLimit: Omezeno pouze na jednu uloženou hru
-        customizeKeybindings: Změna klávesových zkratek
-        exportingBase: Exportovat celou základnu jako obrázek
     settingNotAvailable: Nedostupné v demo verzi.
 tips:
     - Hub přijímá vstup jakéhokoliv tvaru, nejen právě požadovaný tvar!
@@ -1283,14 +1203,7 @@ mods:
     version: Verze
     modWebsite: Webová stránka
     openFolder: Otevřít složku s módy
-    folderOnlyStandalone: Otevření složky s módy je možné pouze v samostatné verzi hry.
     browseMods: Procházet módy
     modsInfo: Chcete-li nainstalovat a spravovat módy, zkopírujte je do složky mods
         v adresáři hry. Můžete také použít tlačítko 'Otevřít složku s módy'
         vpravo nahoře.
-    noModSupport: K instalaci módů potřebujete samostatnou verzi hry na Steamu.
-    togglingComingSoon:
-        title: Již brzy
-        description: Aktivace či deaktivace módů je v současné době možná pouze kopírováním
-            souboru módu z nebo do mods/ složky. Nicméně, možnost správy módů přímo
-            ze hry je plánována pro budoucí aktualizaci!

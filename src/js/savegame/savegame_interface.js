@@ -1,6 +1,6 @@
-import { createLogger } from "../core/logging";
+import { Logger } from "../core/logging";
 
-const Ajv = require("ajv");
+import Ajv from "ajv";
 const ajv = new Ajv({
     allErrors: false,
     uniqueItems: false,
@@ -10,14 +10,14 @@ const ajv = new Ajv({
 
 const validators = {};
 
-const logger = createLogger("savegame_interface");
+const logger = new Logger("savegame_interface");
 
-export class BaseSavegameInterface {
+export class SavegameInterface {
     /**
      * Returns the interfaces version
      */
     getVersion() {
-        throw new Error("Implement get version");
+        return 1010;
     }
 
     /**
@@ -25,7 +25,11 @@ export class BaseSavegameInterface {
      * @returns {object}
      */
     getSchemaUncached() {
-        throw new Error("Implement get schema");
+        return {
+            type: "object",
+            required: [],
+            additionalProperties: true,
+        };
     }
 
     getValidator() {

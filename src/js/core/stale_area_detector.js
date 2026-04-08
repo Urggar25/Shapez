@@ -1,10 +1,10 @@
 import { Component } from "../game/component";
 import { Entity } from "../game/entity";
 import { globalConfig } from "./config";
-import { createLogger } from "./logging";
+import { Logger } from "./logging";
 import { Rectangle } from "./rectangle";
 
-const logger = createLogger("stale_areas");
+const logger = new Logger("stale_areas");
 
 export class StaleAreaDetector {
     /**
@@ -58,9 +58,10 @@ export class StaleAreaDetector {
             for (let i = 0; i < componentIds.length; ++i) {
                 if (entity.components[componentIds[i]]) {
                     // Entity is relevant, compute affected area
-                    const area = entity.components.StaticMapEntity.getTileSpaceBounds().expandedInAllDirections(
-                        tilesAround
-                    );
+                    const area =
+                        entity.components.StaticMapEntity.getTileSpaceBounds().expandedInAllDirections(
+                            tilesAround
+                        );
                     this.invalidate(area);
                     return;
                 }
@@ -79,8 +80,8 @@ export class StaleAreaDetector {
      */
     update() {
         if (this.staleArea) {
-            logger.log(this.name, "is recomputing", this.staleArea.toString());
             if (G_IS_DEV && globalConfig.debug.renderChanges) {
+                logger.log(this.name, "is recomputing", this.staleArea.toString());
                 this.root.hud.parts.changesDebugger.renderChange(this.name, this.staleArea, "#fd145b");
             }
             this.recomputeMethod(this.staleArea);

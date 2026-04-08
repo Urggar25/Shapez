@@ -1,7 +1,7 @@
 import { globalConfig } from "../../core/config";
 import { gMetaBuildingRegistry } from "../../core/global_registries";
 import { Loader } from "../../core/loader";
-import { createLogger } from "../../core/logging";
+import { Logger } from "../../core/logging";
 import { Rectangle } from "../../core/rectangle";
 import { AtlasSprite } from "../../core/sprites";
 import { StaleAreaDetector } from "../../core/stale_area_detector";
@@ -13,20 +13,18 @@ import {
     enumInvertedDirections,
     Vector,
 } from "../../core/vector";
-import { ACHIEVEMENTS } from "../../platform/achievement_provider";
 import { BaseItem } from "../base_item";
-import { arrayWireRotationVariantToType, MetaWireBuilding } from "../buildings/wire";
 import { getCodeFromBuildingData } from "../building_codes";
+import { arrayWireRotationVariantToType, MetaWireBuilding } from "../buildings/wire";
 import { enumWireType, enumWireVariant, WireComponent } from "../components/wire";
-import { enumPinSlotType, WiredPinsComponent } from "../components/wired_pins";
 import { WireTunnelComponent } from "../components/wire_tunnel";
+import { enumPinSlotType, WiredPinsComponent } from "../components/wired_pins";
 import { Entity } from "../entity";
 import { GameSystem } from "../game_system";
-import { GameSystemWithFilter } from "../game_system_with_filter";
 import { isTruthyItem } from "../items/boolean_item";
 import { MapChunkView } from "../map_chunk_view";
 
-const logger = createLogger("wires");
+const logger = new Logger("wires");
 
 let networkUidCounter = 0;
 
@@ -617,7 +615,7 @@ export class WireSystem extends GameSystem {
                     assert(sprite, "Unknown wire type: " + wireType);
                     const staticComp = entity.components.StaticMapEntity;
                     parameters.context.globalAlpha = opacity;
-                    staticComp.drawSpriteOnBoundsClipped(parameters, sprite, 0);
+                    staticComp.drawSpriteOnBoundsClipped(parameters, sprite, 0, null, true);
 
                     // DEBUG Rendering
                     if (G_IS_DEV && globalConfig.debug.renderWireRotations) {
@@ -699,8 +697,6 @@ export class WireSystem extends GameSystem {
             return;
         }
 
-        this.root.signals.achievementCheck.dispatch(ACHIEVEMENTS.place5000Wires, entity);
-
         // Invalidate affected area
         const originalRect = staticComp.getTileSpaceBounds();
         const affectedArea = originalRect.expandedInAllDirections(1);
@@ -730,16 +726,14 @@ export class WireSystem extends GameSystem {
 
                     const variant = targetStaticComp.getVariant();
 
-                    const {
-                        rotation,
-                        rotationVariant,
-                    } = metaWire.computeOptimalDirectionAndRotationVariantAtTile({
-                        root: this.root,
-                        tile: new Vector(x, y),
-                        rotation: targetStaticComp.originalRotation,
-                        variant,
-                        layer: targetEntity.layer,
-                    });
+                    const { rotation, rotationVariant } =
+                        metaWire.computeOptimalDirectionAndRotationVariantAtTile({
+                            root: this.root,
+                            tile: new Vector(x, y),
+                            rotation: targetStaticComp.originalRotation,
+                            variant,
+                            layer: targetEntity.layer,
+                        });
 
                     // Compute delta to see if anything changed
                     const newType = arrayWireRotationVariantToType[rotationVariant];

@@ -2,13 +2,12 @@
 import { Application } from "../application";
 /* typehints:end*/
 
-import { GameState } from "./game_state";
-import { createLogger } from "./logging";
-import { APPLICATION_ERROR_OCCURED } from "./error_handler";
-import { waitNextFrame, removeAllChildren } from "./utils";
 import { MOD_SIGNALS } from "../mods/mod_signals";
+import { GameState } from "./game_state";
+import { Logger } from "./logging";
+import { removeAllChildren, waitNextFrame } from "./utils";
 
-const logger = createLogger("state_manager");
+const logger = new Logger("state_manager");
 
 /**
  * This is the main state machine which drives the game states.
@@ -35,7 +34,7 @@ export class StateManager {
         // Create a dummy to retrieve the key
         const dummy = new stateClass();
         assert(dummy instanceof GameState, "Not a state!");
-        const key = dummy.getKey();
+        const key = dummy.key;
         assert(!this.stateClasses[key], `State '${key}' is already registered!`);
         this.stateClasses[key] = stateClass;
     }
@@ -56,13 +55,13 @@ export class StateManager {
      * @param {string} key State Key
      */
     moveToState(key, payload = {}) {
-        if (APPLICATION_ERROR_OCCURED) {
+        if (window.APP_ERROR_OCCURED) {
             console.warn("Skipping state transition because of application crash");
             return;
         }
 
         if (this.currentState) {
-            if (key === this.currentState.getKey()) {
+            if (key === this.currentState.key) {
                 logger.error(`State '${key}' is already active!`);
                 return false;
             }
@@ -70,7 +69,7 @@ export class StateManager {
 
             // Remove all references
             for (const stateKey in this.currentState) {
-                if (this.currentState.hasOwnProperty(stateKey)) {
+                if (Object.hasOwn(this.currentState, stateKey)) {
                     delete this.currentState[stateKey];
                 }
             }
@@ -81,27 +80,27 @@ export class StateManager {
         this.currentState.internalRegisterCallback(this, this.app);
 
         // Clean up old elements
-        removeAllChildren(document.body);
+        if (this.currentState.getRemovePreviousContent()) {
+            removeAllChildren(document.body);
+        }
 
         document.body.className = "gameState " + (this.currentState.getHasFadeIn() ? "" : "arrived");
         document.body.id = "state_" + key;
-        document.body.innerHTML = this.currentState.internalGetFullHtml();
+
+        if (this.currentState.getRemovePreviousContent()) {
+            const content = this.currentState.internalGetWrappedContent();
+            document.body.append(content);
+        }
 
         const dialogParent = document.createElement("div");
         dialogParent.classList.add("modalDialogParent");
         document.body.appendChild(dialogParent);
-        try {
-            this.currentState.internalEnterCallback(payload);
-        } catch (ex) {
-            console.error(ex);
-            throw ex;
-        }
+
+        this.currentState.internalEnterCallback(payload);
 
         this.app.sound.playThemeMusic(this.currentState.getThemeMusic());
 
         this.currentState.onResized(this.app.screenWidth, this.app.screenHeight);
-
-        this.app.analytics.trackStateEnter(key);
 
         window.history.pushState(
             {
