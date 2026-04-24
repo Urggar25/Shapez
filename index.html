@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forgefront Protocol - Prototype</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Forgefront Protocol</h1>
+    <p>Extraire → Transporter → Transformer → Optimiser → Étendre</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Construction</h2>
+      <div id="toolbar"></div>
+      <p class="hint">Rotation: <strong>R</strong> · Supprimer: <strong>C</strong></p>
+      <h3>Technologies</h3>
+      <ul id="techTree"></ul>
+    </section>
+
+    <section class="canvas-wrap">
+      <canvas id="game" width="960" height="640"></canvas>
+    </section>
+
+    <section class="panel">
+      <h2>État usine</h2>
+      <ul id="stats"></ul>
+      <h3>Contrat actif</h3>
+      <p id="contract"></p>
+      <button id="newContract">Nouveau contrat</button>
+      <h3>Objectifs visibles</h3>
+      <ul id="objectives"></ul>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
